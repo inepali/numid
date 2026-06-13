@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #fafafa;
+    --foreground: #09090b;
+    --card: #ffffff;
+    --card-foreground: #09090b;
+    --primary: #4f46e5;
+    --primary-foreground: #ffffff;
+    --secondary: #f4f4f5;
+    --secondary-foreground: #09090b;
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+    --accent: #f4f4f5;
+    --accent-foreground: #09090b;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #4f46e5;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: #030303;
+    --foreground: #f4f4f5;
+    --card: #0c0a09;
+    --card-foreground: #f4f4f5;
+    --primary: #6366f1;
+    --primary-foreground: #ffffff;
+    --secondary: #1c1917;
+    --secondary-foreground: #f4f4f5;
+    --muted: #1c1917;
+    --muted-foreground: #78716c;
+    --accent: #1c1917;
+    --accent-foreground: #f4f4f5;
+    --destructive: #ea580c;
+    --destructive-foreground: #ffffff;
+    --border: #1c1917;
+    --input: #1c1917;
+    --ring: #6366f1;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+/* Glassmorphism helpers */
+.glass {
+  background: rgba(12, 10, 9, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Animation utilities */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
