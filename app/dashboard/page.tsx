@@ -409,7 +409,7 @@ export default function DashboardPage() {
                 </div>
 
                 <span className={`px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wide ${profile?.status === "active" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-orange-500/20 text-orange-300 border border-orange-500/30"}`}>
-                  {profile?.status.toUpperCase()}
+                  {profile?.status?.toUpperCase() || "PENDING"}
                 </span>
               </div>
 
