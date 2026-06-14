@@ -34,8 +34,8 @@ import {
 import Link from "next/link";
 
 // Instantiate client-side Supabase client
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mock-supabase.supabase.co";
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-anon-key";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function DashboardPage() {
@@ -108,16 +108,22 @@ export default function DashboardPage() {
     setLoginError(null);
     setLoginLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password: loginPassword,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
 
-    if (error) {
-      setLoginError(error.message);
+      if (error) {
+        setLoginError(error.message);
+      } else {
+        await loadData();
+      }
+    } catch (err: any) {
+      console.error("[Dashboard Login] Unexpected error:", err);
+      setLoginError(err?.message || "Network error — please check your connection and try again.");
+    } finally {
       setLoginLoading(false);
-    } else {
-      await loadData();
     }
   };
 

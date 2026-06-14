@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { createBrowserClient } from "@supabase/ssr";
 import { 
   Phone, 
   Mail, 
@@ -15,13 +16,68 @@ import {
   Sparkles,
   Smartphone,
   CheckCircle2,
-  LockKeyhole
+  LockKeyhole,
+  X,
+  Loader2,
+  AlertCircle
 } from "lucide-react";
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export default function LandingPage() {
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [animationStep, setAnimationStep] = useState(0);
+
+  // Login modal state
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+
+  const openLogin = () => {
+    setLoginOpen(true);
+    setLoginError(null);
+    setLoginSuccess(false);
+    setLoginEmail("");
+    setLoginPassword("");
+  };
+
+  const closeLogin = () => {
+    setLoginOpen(false);
+    setLoginError(null);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    if (!loginEmail || !loginPassword) {
+      setLoginError("Please enter your email and password.");
+      return;
+    }
+    setIsPending(true);
+    try {
+      const supabase = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+      if (error) {
+        setLoginError(error.message || "Invalid email or password.");
+      } else {
+        setLoginSuccess(true);
+        setTimeout(() => { window.location.href = "/dashboard"; }, 800);
+      }
+    } catch (err: any) {
+      console.error("[Login] Unexpected error:", err);
+      setLoginError(err?.message || "Network error — please check your connection and try again.");
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   // Run the visualizer animation loop
   useEffect(() => {
@@ -29,6 +85,13 @@ export default function LandingPage() {
       setAnimationStep((prev) => (prev + 1) % 4);
     }, 3000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") closeLogin(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   const toggleFaq = (index: number) => {
@@ -85,12 +148,13 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center space-x-4">
-            <Link 
-              href="/signup" 
+            <button
+              id="nav-sign-in-btn"
+              onClick={openLogin}
               className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-4 py-2"
             >
               Sign In
-            </Link>
+            </button>
             <Link 
               href="/signup" 
               className="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 hover:-translate-y-0.5"
@@ -464,6 +528,123 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Login Modal */}
+      {loginOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) closeLogin(); }}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+          {/* Modal card */}
+          <div className="relative w-full max-w-md bg-slate-950 border border-white/8 rounded-3xl p-8 shadow-2xl animate-fadeIn">
+            {/* Close button */}
+            <button
+              id="login-modal-close"
+              onClick={closeLogin}
+              className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-slate-900 border border-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Logo mark */}
+            <div className="flex items-center space-x-2 mb-8">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center">
+                <span className="font-display font-extrabold text-white text-base">N</span>
+              </div>
+              <span className="font-display font-extrabold text-white text-lg tracking-tight">
+                Num<span className="text-indigo-400">ID</span>
+              </span>
+            </div>
+
+            {loginSuccess ? (
+              <div className="text-center py-6 space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mx-auto flex items-center justify-center text-emerald-400">
+                  <CheckCircle2 className="w-7 h-7" />
+                </div>
+                <p className="text-white font-bold text-lg">Welcome back!</p>
+                <p className="text-slate-400 text-xs">Redirecting to your dashboard…</p>
+              </div>
+            ) : (
+              <form id="login-form" onSubmit={handleLogin} className="space-y-5">
+                <div className="text-left mb-6">
+                  <h2 className="font-display text-2xl font-bold text-white mb-1">Sign In</h2>
+                  <p className="text-xs text-slate-400">Access your NumID dashboard.</p>
+                </div>
+
+                {loginError && (
+                  <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-start space-x-2.5">
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    <span>{loginError}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="login-email" className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-wide">Email</label>
+                  <div className="relative flex items-center">
+                    <div className="absolute left-4 text-slate-500 pointer-events-none">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <input
+                      id="login-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
+                      autoFocus
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="login-password" className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-wide">Password</label>
+                  <div className="relative flex items-center">
+                    <div className="absolute left-4 text-slate-500 pointer-events-none">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <input
+                      id="login-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  id="login-submit-btn"
+                  type="submit"
+                  disabled={isPending}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 flex items-center justify-center space-x-2 group"
+                >
+                  {isPending ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Sign In</span>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+
+                <p className="text-center text-xs text-slate-500 pt-1">
+                  Don&apos;t have an account?{" "}
+                  <Link href="/signup" onClick={closeLogin} className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
+                    Create one
+                  </Link>
+                </p>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );
