@@ -155,7 +155,7 @@ export default function SignupPage() {
           // Fallback to manual login instruction step
           setStep("EMAIL_PENDING");
         } else {
-          router.push("/dashboard");
+          window.location.href = "/dashboard";
         }
       } else {
         setErrorMsg(res.message);
@@ -494,7 +494,7 @@ export default function SignupPage() {
             </div>
 
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={() => { window.location.href = "/dashboard"; }}
               className="w-full bg-slate-900 hover:bg-slate-800 border border-white/10 text-white font-semibold py-3 rounded-xl transition-all text-sm"
             >
               Access Dashboard / Sign In

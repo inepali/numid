@@ -403,14 +403,14 @@ export default function DashboardPage() {
             <div>
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Your Assigned NumID</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">My NumID</span>
                   <h2 className="font-display text-2xl md:text-3xl font-extrabold text-white font-mono mt-1 select-all hover:text-indigo-300 transition-colors">
                     {profile?.numid_address}
                   </h2>
                 </div>
 
-                <span className={`px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wide ${profile?.status === "active" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-orange-500/20 text-orange-300 border border-orange-500/30"}`}>
-                  {profile?.status?.toUpperCase() || "PENDING"}
+                <span className={`px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wide ${(profile?.phone_verified && profile?.email_verified) || profile?.status === "active" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-orange-500/20 text-orange-300 border border-orange-500/30"}`}>
+                  {(profile?.phone_verified && profile?.email_verified) || profile?.status === "active" ? "VERIFIED" : (profile?.status?.toUpperCase() || "PENDING")}
                 </span>
               </div>
 
@@ -420,9 +420,14 @@ export default function DashboardPage() {
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${profile?.phone_verified ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
                     <Smartphone className="w-4 h-4" />
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] text-slate-500 uppercase font-bold">Verified Phone</p>
-                    <p className="text-xs text-white font-medium">{profile?.phone_number}</p>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-xs text-white font-medium">{profile?.phone_number}</p>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${profile?.phone_verified ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                        {profile?.phone_verified ? "Verified" : "Pending"}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -430,9 +435,14 @@ export default function DashboardPage() {
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${profile?.email_verified ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
                     <Mail className="w-4 h-4" />
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] text-slate-500 uppercase font-bold">Destination Email</p>
-                    <p className="text-xs text-white font-medium truncate max-w-[150px]">{profile?.destination_email}</p>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-xs text-white font-medium truncate max-w-[150px]">{profile?.destination_email}</p>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${profile?.email_verified ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                        {profile?.email_verified ? "Verified" : "Pending"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

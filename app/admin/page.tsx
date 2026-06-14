@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 import { 
   adminGetStats, 
   adminSearchUsers, 
@@ -33,7 +33,7 @@ import Link from "next/link";
 // Client Supabase
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mock-supabase.supabase.co";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-anon-key";
-const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function AdminPage() {
   const router = useRouter();
