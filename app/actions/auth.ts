@@ -1,7 +1,13 @@
 "use server";
 
 import { createClient, createAdminClient } from "@/lib/supabase";
-import { sendSMSVerification, checkSMSVerification } from "@/lib/twilio-verify";
+import { 
+  sendSMSVerification, 
+  checkSMSVerification,
+  sendEmailVerification,
+  checkEmailVerification
+} from "@/lib/twilio-verify";
+import { addDestinationAddress } from "@/lib/cloudflare-routing";
 import { cookies } from "next/headers";
 
 // Simple global memory rate limiter for development/production fallback
@@ -62,6 +68,33 @@ export async function sendPhoneOTPAction(phone: string) {
 }
 
 /**
+ * Action: Sends email OTP
+ */
+export async function sendEmailOTPAction(email: string) {
+  try {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      return { success: false, message: "Please enter a valid email address" };
+    }
+
+    // Rate Limiting (5 requests per hour)
+    const rateLimit = checkRateLimit(email.trim().toLowerCase());
+    if (!rateLimit.allowed) {
+      const minsLeft = Math.ceil((rateLimit.resetTime - Date.now()) / 60000);
+      return { 
+        success: false, 
+        message: `Rate limit exceeded. Maximum 5 OTP requests per hour. Try again in ${minsLeft} minutes.` 
+      };
+    }
+
+    const res = await sendEmailVerification(email);
+    return res;
+  } catch (error: any) {
+    return { success: false, message: error.message || "Something went wrong" };
+  }
+}
+
+/**
  * Action: Verifies phone OTP
  */
 export async function verifyPhoneOTPAction(phone: string, code: string) {
@@ -100,9 +133,14 @@ export async function signUpAction(formData: FormData) {
   try {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
+    const emailCode = formData.get("email_code") as string;
     
     if (!email || !password) {
       return { success: false, message: "Email and password are required" };
+    }
+
+    if (!emailCode) {
+      return { success: false, message: "Email verification code is required" };
     }
 
     const cookieStore = await cookies();
@@ -116,6 +154,12 @@ export async function signUpAction(formData: FormData) {
     const verifiedTime = parseInt(verifiedTimeStr, 10);
     if (Date.now() - verifiedTime > 15 * 60 * 1000) {
       return { success: false, message: "Phone verification expired. Please verify your phone again." };
+    }
+
+    // Verify the email OTP code using Twilio Verify
+    const emailVerifyRes = await checkEmailVerification(email, emailCode);
+    if (!emailVerifyRes.success) {
+      return { success: false, message: "Invalid or expired email verification code" };
     }
 
     const supabase = await createClient();
@@ -142,8 +186,19 @@ export async function signUpAction(formData: FormData) {
       return { success: false, message: "Signup failed. Please try again." };
     }
 
-    // Now, update phone_verified = true in public.users using admin client (since RLS restricts updates)
     const adminClient = createAdminClient();
+
+    // Confirm the email in Supabase Auth using the admin client
+    const { error: confirmError } = await adminClient.auth.admin.updateUserById(
+      data.user.id,
+      { email_confirm: true }
+    );
+
+    if (confirmError) {
+      console.error("[SignUpAction] Error confirming user email:", confirmError);
+    }
+
+    // Now, update phone_verified = true in public.users using admin client (since RLS restricts updates)
     const { error: updateError } = await adminClient
       .from("users")
       .update({ phone_verified: true })
@@ -153,12 +208,26 @@ export async function signUpAction(formData: FormData) {
       console.error("[SignUpAction] Error updating phone_verified status:", updateError);
     }
 
+    // Register destination email address to Cloudflare routing immediately
+    try {
+      await addDestinationAddress(email);
+    } catch (cfErr: any) {
+      console.error("[SignUpAction] Failed to register destination email in Cloudflare:", cfErr);
+    }
+
     // Log the successful verification into public.verification_logs
-    await adminClient.from("verification_logs").insert({
-      user_id: data.user.id,
-      type: "sms",
-      status: "verified",
-    });
+    await adminClient.from("verification_logs").insert([
+      {
+        user_id: data.user.id,
+        type: "sms",
+        status: "verified",
+      },
+      {
+        user_id: data.user.id,
+        type: "email",
+        status: "verified",
+      }
+    ]);
 
     // Clear verification cookies
     cookieStore.delete("numid_verified_phone");
@@ -166,7 +235,7 @@ export async function signUpAction(formData: FormData) {
 
     return { 
       success: true, 
-      message: "Signup successful! We have sent a verification link to your email. Please verify it to activate your account." 
+      message: "Signup successful! Your email and phone number have been verified. You can now access your dashboard." 
     };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to complete signup" };

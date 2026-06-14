@@ -101,3 +101,73 @@ export async function checkSMSVerification(phone: string, code: string): Promise
     return { success: false, message: error.message || "Verification check failed" };
   }
 }
+
+/**
+ * Send Email verification code to an email address
+ */
+export async function sendEmailVerification(email: string): Promise<{ success: boolean; message: string; sid?: string }> {
+  console.log(`[Twilio Verify] sendEmailVerification called for: ${email}`);
+  const key = email.trim().toLowerCase();
+
+  if (IS_MOCK_MODE) {
+    const mockCode = Math.floor(100000 + Math.random() * 900000).toString();
+    setMockOtp(key, mockCode);
+    console.log(`[Twilio Verify MOCK] Sending OTP code ${mockCode} to email ${key}.`);
+    return {
+      success: true,
+      message: `MOCK OTP SENT. Check console. Code is: ${mockCode}`,
+      sid: `mock-sid-${Math.random().toString(36).substring(2, 9)}`,
+    };
+  }
+
+  try {
+    const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+    const verification = await client.verify.v2
+      .services(TWILIO_VERIFY_SERVICE_SID)
+      .verifications.create({ to: key, channel: "email" });
+
+    return {
+      success: true,
+      message: "Verification email sent successfully",
+      sid: verification.sid,
+    };
+  } catch (error: any) {
+    console.error("[Twilio Verify ERROR] sendEmailVerification failed:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to send email verification",
+    };
+  }
+}
+
+/**
+ * Validate Email verification code for an email address
+ */
+export async function checkEmailVerification(email: string, code: string): Promise<{ success: boolean; message: string }> {
+  console.log(`[Twilio Verify] checkEmailVerification called for: ${email} with code: ${code}`);
+  const key = email.trim().toLowerCase();
+
+  if (IS_MOCK_MODE) {
+    const expectedCode = getMockOtp(key);
+    if (code === expectedCode || code === "123456") {
+      return { success: true, message: "Verification successful" };
+    }
+    return { success: false, message: "Invalid verification code" };
+  }
+
+  try {
+    const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+    const verificationCheck = await client.verify.v2
+      .services(TWILIO_VERIFY_SERVICE_SID)
+      .verificationChecks.create({ to: key, code });
+
+    if (verificationCheck.status === "approved") {
+      return { success: true, message: "Verification successful" };
+    }
+    return { success: false, message: "Invalid verification code" };
+  } catch (error: any) {
+    console.error("[Twilio Verify ERROR] checkEmailVerification failed:", error);
+    return { success: false, message: error.message || "Verification check failed" };
+  }
+}
+

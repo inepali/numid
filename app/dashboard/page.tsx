@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { 
   getDashboardData, 
-  updateDestinationEmailAction, 
+  sendNewEmailOTPAction,
+  verifyNewEmailOTPAction, 
   checkCloudflareStatusAction, 
   exportDataAction, 
   deleteAccountAction,
@@ -31,7 +32,8 @@ import {
   HelpCircle,
   AlertTriangle,
   History,
-  Sparkles
+  Sparkles,
+  ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
 
@@ -52,6 +54,15 @@ export default function DashboardPage() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [newEmail, setNewEmail] = useState("");
+  const [emailModalPhase, setEmailModalPhase] = useState<"ENTER_EMAIL" | "ENTER_CODE">("ENTER_EMAIL");
+  const [newEmailOtp, setNewEmailOtp] = useState("");
+
+  useEffect(() => {
+    if (!showEmailModal) {
+      setEmailModalPhase("ENTER_EMAIL");
+      setNewEmailOtp("");
+    }
+  }, [showEmailModal]);
   
   // Notification states
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -121,7 +132,7 @@ export default function DashboardPage() {
     router.push("/");
   };
 
-  const handleUpdateEmail = (e: React.FormEvent) => {
+  const handleSendEmailOTP = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -129,11 +140,28 @@ export default function DashboardPage() {
     if (!newEmail) return;
 
     startTransition(async () => {
-      const res = await updateDestinationEmailAction(newEmail);
+      const res = await sendNewEmailOTPAction(newEmail);
+      if (res.success) {
+        setSuccessMsg(res.message);
+        setEmailModalPhase("ENTER_CODE");
+      } else {
+        setErrorMsg(res.message);
+      }
+    });
+  };
+
+  const handleVerifyEmailOTP = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (!newEmail || !newEmailOtp) return;
+
+    startTransition(async () => {
+      const res = await verifyNewEmailOTPAction(newEmail, newEmailOtp);
       if (res.success) {
         setSuccessMsg(res.message);
         setShowEmailModal(false);
-        // Refresh dashboard data
         await loadData();
       } else {
         setErrorMsg(res.message);
@@ -572,45 +600,92 @@ export default function DashboardPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
           <div className="w-full max-w-md bg-slate-950 border border-white/5 rounded-3xl p-6 shadow-2xl animate-scaleIn">
             <h3 className="font-display font-bold text-white text-lg mb-2">Update Destination Email</h3>
-            <p className="text-xs text-slate-400 mb-6">Enter your new forwarding address. This will trigger verification links.</p>
             
-            <form onSubmit={handleUpdateEmail} className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 block mb-2 uppercase tracking-wide">New Email Address</label>
-                <input
-                  type="email"
-                  placeholder="name@example.com"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-white focus:outline-none"
-                  required
-                />
-              </div>
+            {emailModalPhase === "ENTER_EMAIL" ? (
+              <form onSubmit={handleSendEmailOTP} className="space-y-4">
+                <p className="text-xs text-slate-400">Enter your new forwarding address. We will send a verification code to this inbox.</p>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-2 uppercase tracking-wide">New Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-white focus:outline-none"
+                    required
+                  />
+                </div>
 
-              <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-[10px] text-orange-300 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                <p>Warning: Forwarding will temporarily pause until you click the confirmation emails sent to this new inbox.</p>
-              </div>
+                <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-[10px] text-orange-300 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <p>Warning: Forwarding will temporarily pause until both NumID is verified and Cloudflare's own routing email link is approved.</p>
+                </div>
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-white/5">
-                <button
-                  type="button"
-                  onClick={() => setShowEmailModal(false)}
-                  className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl"
-                >
-                  Cancel
-                </button>
+                <div className="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailModal(false)}
+                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                  
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center space-x-1.5"
+                  >
+                    {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                    <span>Send Verification Code</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyEmailOTP} className="space-y-4">
+                <div className="flex items-center space-x-1 text-slate-500 hover:text-white transition-colors cursor-pointer text-[10px] font-semibold" onClick={() => setEmailModalPhase("ENTER_EMAIL")}>
+                  <ArrowLeft className="w-3 h-3" />
+                  <span>Change email address</span>
+                </div>
                 
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center space-x-1.5"
-                >
-                  {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
-                  <span>Request Verification</span>
-                </button>
-              </div>
-            </form>
+                <p className="text-xs text-slate-400">We've sent a 6-digit verification code to <span className="text-white font-semibold">{newEmail}</span>.</p>
+                
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-2 uppercase tracking-wide">Enter Code</label>
+                  <input
+                    type="text"
+                    placeholder="123456"
+                    maxLength={6}
+                    value={newEmailOtp}
+                    onChange={(e) => setNewEmailOtp(e.target.value)}
+                    className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-white focus:outline-none tracking-widest text-center text-lg font-mono"
+                    required
+                  />
+                </div>
+
+                <div className="bg-slate-900/40 border border-white/5 rounded-xl p-3 text-[10px] text-slate-400">
+                  <span className="font-bold text-indigo-400">💡 Local Sandbox Tip:</span> Check server logs for the OTP or enter <code className="font-mono text-white bg-slate-800 px-1 py-0.5 rounded">123456</code>.
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailModal(false)}
+                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                  
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center space-x-1.5"
+                  >
+                    {isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                    <span>Verify & Update</span>
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

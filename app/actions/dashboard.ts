@@ -8,6 +8,7 @@ import {
   updateRoute, 
   deleteRoute 
 } from "@/lib/cloudflare-routing";
+import { sendEmailVerification, checkEmailVerification } from "@/lib/twilio-verify";
 
 /**
  * Action: Fetch all current user dashboard data, and handle auto-activation
@@ -121,9 +122,9 @@ export async function getDashboardData() {
 }
 
 /**
- * Action: Initiate change of forwarding destination email
+ * Action: Send verification OTP for updating destination email
  */
-export async function updateDestinationEmailAction(newEmail: string) {
+export async function sendNewEmailOTPAction(newEmail: string) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -137,18 +138,52 @@ export async function updateDestinationEmailAction(newEmail: string) {
       return { success: false, message: "Invalid email format" };
     }
 
+    const res = await sendEmailVerification(newEmail);
+    return res;
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to send email OTP" };
+  }
+}
+
+/**
+ * Action: Verify email OTP and update destination email in DB, Supabase Auth, and Cloudflare
+ */
+export async function verifyNewEmailOTPAction(newEmail: string, code: string) {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!newEmail || !emailRegex.test(newEmail)) {
+      return { success: false, message: "Invalid email format" };
+    }
+
+    if (!code || code.trim().length === 0) {
+      return { success: false, message: "Verification code is required" };
+    }
+
+    // Verify OTP code via Twilio Verify
+    const verifyRes = await checkEmailVerification(newEmail, code);
+    if (!verifyRes.success) {
+      return { success: false, message: "Invalid or expired verification code" };
+    }
+
     const adminClient = createAdminClient();
 
     // 1. Register new email as a destination address in Cloudflare
     await addDestinationAddress(newEmail);
 
-    // 2. Set DB user status to pending, and email_verified to false for this new email
+    // 2. Set DB user status to pending, and email_verified to true for this verified email
     const { error: dbError } = await adminClient
       .from("users")
       .update({
         destination_email: newEmail,
-        email_verified: false,
-        status: "pending",
+        email_verified: true,
+        status: "pending", // Keep pending until Cloudflare own forwarding status check is active
       })
       .eq("id", user.id);
 
@@ -157,19 +192,26 @@ export async function updateDestinationEmailAction(newEmail: string) {
     // 3. Log audit event
     await adminClient.from("audit_logs").insert({
       user_id: user.id,
-      action: "change_destination_email_initiated",
+      action: "change_destination_email_success",
       metadata: { new_destination: newEmail },
     });
 
-    // 4. Update Supabase Auth email address as well (sends confirmation to new email)
-    const { error: authUpdateError } = await supabase.auth.updateUser({ email: newEmail });
+    // 4. Update and confirm email in Supabase Auth using admin client (so no Supabase confirm link needed)
+    const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(
+      user.id,
+      { 
+        email: newEmail,
+        email_confirm: true 
+      }
+    );
+
     if (authUpdateError) {
-      console.warn("[Dashboard] Supabase Auth email update failed:", authUpdateError.message);
+      console.warn("[Dashboard] Supabase Auth admin email update/confirm failed:", authUpdateError.message);
     }
 
     return {
       success: true,
-      message: "Forwarding update initiated. Please check your new email for two verification links (one from NumID/Supabase and one from Cloudflare Routing).",
+      message: "Destination email updated and verified successfully! We've registered this with Cloudflare. Please click Cloudflare's independent verification email to activate routing.",
     };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to update destination email" };
