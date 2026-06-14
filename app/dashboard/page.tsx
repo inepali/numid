@@ -13,9 +13,7 @@ import {
   mockVerifyDestinationEmailAction
 } from "@/app/actions/dashboard";
 import { 
-  Phone, 
   Mail, 
-  ShieldCheck, 
   ShieldAlert, 
   User, 
   LogOut, 
@@ -25,11 +23,8 @@ import {
   Trash2, 
   Lock, 
   Loader2, 
-  ExternalLink,
   ChevronRight,
-  UserCheck,
   CheckCircle,
-  HelpCircle,
   AlertTriangle,
   History,
   Sparkles,
