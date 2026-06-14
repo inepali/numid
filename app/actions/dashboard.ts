@@ -22,13 +22,17 @@ export async function getDashboardData() {
       return { success: false, message: "Unauthorized" };
     }
 
-    const { data: profile, error: dbError } = await supabase
+    // Use admin client to fetch profile — bypasses RLS and session-cookie
+    // timing issues that can occur immediately after a client-side login.
+    const adminClient = createAdminClient();
+    const { data: profile, error: dbError } = await adminClient
       .from("users")
       .select("*")
       .eq("id", user.id)
       .single();
 
     if (dbError || !profile) {
+      console.error("[getDashboardData] Profile fetch error:", dbError?.message, "user_id:", user.id);
       return { success: false, message: "Profile not found" };
     }
 
