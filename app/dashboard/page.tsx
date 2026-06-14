@@ -10,7 +10,9 @@ import {
   checkCloudflareStatusAction, 
   exportDataAction, 
   deleteAccountAction,
-  mockVerifyDestinationEmailAction
+  mockVerifyDestinationEmailAction,
+  testCloudflareConnectionAction,
+  provisionCloudflareRouteAction,
 } from "@/app/actions/dashboard";
 import { 
   Mail, 
@@ -29,7 +31,9 @@ import {
   History,
   Sparkles,
   ArrowLeft,
-  Smartphone
+  Smartphone,
+  Zap,
+  Radio,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -69,6 +73,27 @@ export default function DashboardPage() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
+
+  // Cloudflare Dev Console state
+  const [cfLoading, setCfLoading] = useState(false);
+  const [cfResult, setCfResult] = useState<{ success: boolean; message: string; detail?: Record<string, string> } | null>(null);
+
+  const handleTestCloudflare = async () => {
+    setCfLoading(true);
+    setCfResult(null);
+    const res = await testCloudflareConnectionAction();
+    setCfResult(res as any);
+    setCfLoading(false);
+  };
+
+  const handleProvisionCloudflare = async () => {
+    setCfLoading(true);
+    setCfResult(null);
+    const res = await provisionCloudflareRouteAction();
+    setCfResult(res as any);
+    setCfLoading(false);
+    if (res.success) await loadData();
+  };
 
   // Check auth and fetch dashboard data on load
   const loadData = async () => {
@@ -541,6 +566,59 @@ export default function DashboardPage() {
             </button>
           </div>
         )}
+
+        {/* 2b. Cloudflare Dev Console — always visible for testing */}
+        <div className="p-6 rounded-3xl bg-slate-900/60 border border-orange-500/20 shadow-lg relative">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <Zap className="w-4 h-4 text-orange-400" />
+              <h3 className="font-display font-bold text-white text-sm">Cloudflare Email Routing Dev Console</h3>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 uppercase tracking-wider">
+              {process.env.NEXT_PUBLIC_MOCK_APIS === "true" ? "Mock Mode" : "Live"}
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mb-4">
+            Use these controls to validate your Cloudflare credentials and manually trigger email routing provisioning for your account.
+          </p>
+
+          <div className="flex flex-wrap gap-3 mb-4">
+            <button
+              id="cf-test-btn"
+              onClick={handleTestCloudflare}
+              disabled={cfLoading}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/10 transition-all flex items-center gap-1.5"
+            >
+              {cfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5 text-orange-400" />}
+              <span>Test Cloudflare Connection</span>
+            </button>
+
+            <button
+              id="cf-provision-btn"
+              onClick={handleProvisionCloudflare}
+              disabled={cfLoading}
+              className="bg-orange-600/20 hover:bg-orange-600/30 text-orange-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-orange-500/30 transition-all flex items-center gap-1.5"
+            >
+              {cfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+              <span>Provision My Route Now</span>
+            </button>
+          </div>
+
+          {cfResult && (
+            <div className={`rounded-xl p-4 border text-xs space-y-2 ${
+              cfResult.success
+                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
+                : "bg-red-500/10 border-red-500/20 text-red-300"
+            }`}>
+              <p className="font-semibold">{cfResult.message}</p>
+              {cfResult.detail && (
+                <pre className="text-[10px] font-mono text-slate-400 bg-black/20 rounded-lg p-3 overflow-x-auto">
+                  {JSON.stringify(cfResult.detail, null, 2)}
+                </pre>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* 3. History Logs Timeline */}
         <div className="p-8 rounded-3xl bg-slate-950 border border-white/5 shadow-xl">
