@@ -32,11 +32,9 @@ export async function getDashboardData() {
       .single();
 
     if (dbError || !profile) {
-      console.error("[getDashboardData] Profile fetch error:", dbError?.message, "user_id:", user.id);
-      return { success: false, message: "Profile not found" };
+      console.error("[getDashboardData] Profile fetch error:", dbError?.message, "| code:", dbError?.code, "| user_id:", user.id);
+      return { success: false, message: `Profile not found${dbError ? " — " + dbError.message : ""}` };
     }
-
-    const adminClient = createAdminClient();
 
     // Check if account needs activation (pending, phone verified, and email verified in Supabase)
     // In our flow, email is verified when they click the Supabase signup confirmation link.
