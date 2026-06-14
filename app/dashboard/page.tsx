@@ -28,7 +28,8 @@ import {
   AlertTriangle,
   History,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  Smartphone
 } from "lucide-react";
 import Link from "next/link";
 
