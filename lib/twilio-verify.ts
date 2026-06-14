@@ -1,18 +1,13 @@
 import twilio from "twilio";
-import sgMail from "@sendgrid/mail";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || "";
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || "";
 const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID || "";
 const IS_MOCK_MODE = !TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_VERIFY_SERVICE_SID || process.env.NEXT_PUBLIC_MOCK_APIS === "true";
 
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "";
-const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "no-reply@numid.us";
-const IS_EMAIL_MOCK_MODE = !SENDGRID_API_KEY || process.env.NEXT_PUBLIC_MOCK_APIS === "true";
-
-if (SENDGRID_API_KEY) {
-  sgMail.setApiKey(SENDGRID_API_KEY);
-}
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+const IS_EMAIL_MOCK_MODE = !RESEND_API_KEY || process.env.NEXT_PUBLIC_MOCK_APIS === "true";
 
 if (typeof globalThis !== "undefined") {
   (globalThis as any)._twilioMockOtps = (globalThis as any)._twilioMockOtps || {};
@@ -112,7 +107,7 @@ export async function checkSMSVerification(phone: string, code: string): Promise
 }
 
 if (typeof globalThis !== "undefined") {
-  (globalThis as any)._sendgridOtps = (globalThis as any)._sendgridOtps || {};
+  (globalThis as any)._emailOtps = (globalThis as any)._emailOtps || {};
 }
 
 interface EmailOtpRecord {
@@ -121,33 +116,33 @@ interface EmailOtpRecord {
 }
 
 const getEmailOtp = (email: string): string => {
-  const record = (globalThis as any)._sendgridOtps[email.toLowerCase()] as EmailOtpRecord | undefined;
+  const record = (globalThis as any)._emailOtps[email.toLowerCase()] as EmailOtpRecord | undefined;
   if (!record) return "";
   if (Date.now() > record.expiresAt) {
-    delete (globalThis as any)._sendgridOtps[email.toLowerCase()];
+    delete (globalThis as any)._emailOtps[email.toLowerCase()];
     return "";
   }
   return record.code;
 };
 
 const setEmailOtp = (email: string, code: string) => {
-  (globalThis as any)._sendgridOtps[email.toLowerCase()] = {
+  (globalThis as any)._emailOtps[email.toLowerCase()] = {
     code,
     expiresAt: Date.now() + 15 * 60 * 1000 // 15 mins expiry
   };
 };
 
 /**
- * Send Email verification code to an email address using SendGrid
+ * Send Email verification code to an email address using Resend Transactional Email API
  */
 export async function sendEmailVerification(email: string): Promise<{ success: boolean; message: string; sid?: string }> {
-  console.log(`[SendGrid Email Verify] sendEmailVerification called for: ${email}`);
+  console.log(`[Resend Email Verify] sendEmailVerification called for: ${email}`);
   const key = email.trim().toLowerCase();
   const mockCode = Math.floor(100000 + Math.random() * 900000).toString();
   setEmailOtp(key, mockCode);
 
   if (IS_EMAIL_MOCK_MODE) {
-    console.log(`[SendGrid Email Verify MOCK] Sending OTP code ${mockCode} to email ${key}.`);
+    console.log(`[Resend Email Verify MOCK] Sending OTP code ${mockCode} to email ${key}.`);
     return {
       success: true,
       message: `MOCK OTP SENT. Check console. Code is: ${mockCode}`,
@@ -156,11 +151,10 @@ export async function sendEmailVerification(email: string): Promise<{ success: b
   }
 
   try {
-    const msg = {
-      to: key,
-      from: SENDGRID_FROM_EMAIL,
+    const payload = {
+      from: RESEND_FROM_EMAIL.includes("<") ? RESEND_FROM_EMAIL : `NumID Team <${RESEND_FROM_EMAIL}>`,
+      to: [key],
       subject: "Verify your email address - NumID",
-      text: `Your NumID verification code is: ${mockCode}. This code will expire in 15 minutes.`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
           <h2 style="color: #4f46e5; margin-bottom: 20px;">Verify your NumID Email</h2>
@@ -173,19 +167,32 @@ export async function sendEmailVerification(email: string): Promise<{ success: b
       `,
     };
 
-    await sgMail.send(msg);
-    console.log(`[SendGrid Email Verify] Verification email sent to ${key}`);
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("[Resend Email Verify ERROR] API returned error response:", data);
+      throw new Error(data.message || `Resend API returned status ${response.status}`);
+    }
+
+    console.log(`[Resend Email Verify] Verification email sent to ${key}`);
 
     return {
       success: true,
       message: "Verification email sent successfully",
-      sid: `sg-sid-${Math.random().toString(36).substring(2, 9)}`,
+      sid: data.id || `resend-sid-${Math.random().toString(36).substring(2, 9)}`,
     };
   } catch (error: any) {
-    console.error("[SendGrid Email Verify ERROR] sendEmailVerification failed:", error);
-    if (error.response && error.response.body && error.response.body.errors) {
-      console.error("[SendGrid Detailed Response Body Errors]:", JSON.stringify(error.response.body.errors, null, 2));
-    }
+    console.error("[Resend Email Verify ERROR] sendEmailVerification failed:", error);
     return {
       success: false,
       message: error.message || "Failed to send email verification",
@@ -197,13 +204,13 @@ export async function sendEmailVerification(email: string): Promise<{ success: b
  * Validate Email verification code for an email address
  */
 export async function checkEmailVerification(email: string, code: string): Promise<{ success: boolean; message: string }> {
-  console.log(`[SendGrid Email Verify] checkEmailVerification called for: ${email} with code: ${code}`);
+  console.log(`[Resend Email Verify] checkEmailVerification called for: ${email} with code: ${code}`);
   const key = email.trim().toLowerCase();
 
   const expectedCode = getEmailOtp(key);
   if (code === expectedCode || code === "123456") {
     // Clear code after successful verification to prevent reuse
-    delete (globalThis as any)._sendgridOtps[key];
+    delete (globalThis as any)._emailOtps[key];
     return { success: true, message: "Verification successful" };
   }
   
