@@ -75,7 +75,7 @@ begin
     new.id,
     raw_phone,
     new.email,
-    concat(raw_phone, '@numid.us'),
+    concat(replace(raw_phone, '+', ''), '@numid.us'),
     false,
     false,
     'pending',

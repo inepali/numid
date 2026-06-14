@@ -405,7 +405,7 @@ export default function DashboardPage() {
                 <div>
                   <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">My NumID</span>
                   <h2 className="font-display text-2xl md:text-3xl font-extrabold text-white font-mono mt-1 select-all hover:text-indigo-300 transition-colors">
-                    {profile?.numid_address}
+                    {profile?.numid_address?.replace("+", "")}
                   </h2>
                 </div>
 

@@ -52,14 +52,14 @@ export async function addDestinationAddress(email: string): Promise<{ success: b
 
     const newAddress: MockAddress = {
       email: email.toLowerCase(),
-      verified: false, // Starts as false until verified
+      verified: true, // Auto-verify in Mock Sandbox Mode for seamless developer/dashboard flow
       createdAt: new Date().toISOString(),
     };
     
     addresses.push(newAddress);
     setMockAddresses(addresses);
-    console.log(`[Cloudflare Routing MOCK] Registered destination: ${email}. Verification email simulated.`);
-    return { success: true, verified: false };
+    console.log(`[Cloudflare Routing MOCK] Registered destination: ${email}. Auto-verified in Mock Mode.`);
+    return { success: true, verified: true };
   }
 
   try {
@@ -158,7 +158,8 @@ export async function mockVerifyDestinationEmail(email: string): Promise<boolean
  */
 export async function createRoute(phone: string, destinationEmail: string): Promise<string> {
   console.log(`[Cloudflare Routing] createRoute called for: ${phone} -> ${destinationEmail}`);
-  const numidAddress = `${phone}@numid.us`;
+  const cleanPhone = phone.replace(/\+/g, "");
+  const numidAddress = `${cleanPhone}@numid.us`;
 
   if (IS_MOCK_MODE) {
     const routeId = `cf-rule-${Math.random().toString(36).substring(2, 11)}`;
@@ -166,8 +167,8 @@ export async function createRoute(phone: string, destinationEmail: string): Prom
     
     rules.push({
       id: routeId,
-      name: `NumID Forwarding: ${phone}`,
-      phone,
+      name: `NumID Forwarding: ${cleanPhone}`,
+      phone: cleanPhone,
       destinationEmail,
       enabled: true,
     });
@@ -220,7 +221,8 @@ export async function createRoute(phone: string, destinationEmail: string): Prom
  */
 export async function updateRoute(routeId: string, phone: string, destinationEmail: string): Promise<void> {
   console.log(`[Cloudflare Routing] updateRoute called for ID: ${routeId} to: ${destinationEmail}`);
-  const numidAddress = `${phone}@numid.us`;
+  const cleanPhone = phone.replace(/\+/g, "");
+  const numidAddress = `${cleanPhone}@numid.us`;
 
   if (IS_MOCK_MODE) {
     const rules = getMockRules();
@@ -321,7 +323,7 @@ export async function getRoute(routeId: string): Promise<any> {
         name: rule.name,
         enabled: rule.enabled,
         actions: [{ type: "forward", value: [rule.destinationEmail] }],
-        matchers: [{ type: "literal", field: "to", value: `${rule.phone}@numid.us` }],
+        matchers: [{ type: "literal", field: "to", value: `${rule.phone.replace(/\+/g, "")}@numid.us` }],
       };
     }
     return null;
