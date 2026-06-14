@@ -11,17 +11,14 @@ import {
 } from "@/app/actions/auth";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { 
-  Phone, 
   Lock, 
   Mail, 
   ArrowRight, 
   Smartphone, 
-  ShieldCheck, 
   Loader2, 
   ArrowLeft,
   AlertCircle,
-  CheckCircle2,
-  Sparkles
+  CheckCircle2
 } from "lucide-react";
 
 type SetupStep = "PHONE_INPUT" | "OTP_INPUT" | "ACCOUNT_DETAILS" | "EMAIL_OTP_INPUT" | "EMAIL_PENDING";
