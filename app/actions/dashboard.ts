@@ -374,3 +374,145 @@ export async function mockVerifyDestinationEmailAction(email: string) {
     return { success: false, message: error.message || "Failed to trigger mock verification" };
   }
 }
+
+/**
+ * Action: Test Cloudflare Email Routing API connectivity + auth
+ * Safe read-only call — lists destination addresses. Use this to verify your
+ * CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, and CLOUDFLARE_ZONE_ID are correct
+ * before attempting account provisioning.
+ */
+export async function testCloudflareConnectionAction() {
+  try {
+    const apiToken   = process.env.CLOUDFLARE_API_TOKEN   || "";
+    const accountId  = process.env.CLOUDFLARE_ACCOUNT_ID  || "";
+    const zoneId     = process.env.CLOUDFLARE_ZONE_ID     || "";
+    const isMockMode = !apiToken || !accountId || !zoneId || process.env.NEXT_PUBLIC_MOCK_APIS === "true";
+
+    // Surface env var presence for diagnostics
+    const envStatus = {
+      CLOUDFLARE_API_TOKEN:  apiToken  ? `set (${apiToken.substring(0, 6)}...)` : "❌ MISSING",
+      CLOUDFLARE_ACCOUNT_ID: accountId ? `set (${accountId.substring(0, 6)}...)` : "❌ MISSING",
+      CLOUDFLARE_ZONE_ID:    zoneId    ? `set (${zoneId.substring(0, 6)}...)`    : "❌ MISSING",
+      mode: isMockMode ? "MOCK" : "LIVE",
+    };
+
+    if (isMockMode) {
+      return {
+        success: true,
+        message: "Running in MOCK mode — no real Cloudflare call made.",
+        detail: envStatus,
+      };
+    }
+
+    // 1. Test account-level auth: list destination addresses
+    const addrResp = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/email/routing/addresses?per_page=5`,
+      {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    const addrData = await addrResp.json();
+    if (!addrResp.ok) {
+      const cfError = addrData.errors?.[0];
+      return {
+        success: false,
+        message: `Cloudflare account API failed — ${cfError?.message || addrResp.statusText} (code: ${cfError?.code ?? addrResp.status})`,
+        detail: envStatus,
+      };
+    }
+
+    // 2. Test zone-level auth: list routing rules
+    const zoneResp = await fetch(
+      `https://api.cloudflare.com/client/v4/zones/${zoneId}/email/routing/rules?per_page=5`,
+      {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    const zoneData = await zoneResp.json();
+    if (!zoneResp.ok) {
+      const cfError = zoneData.errors?.[0];
+      return {
+        success: false,
+        message: `Cloudflare zone API failed — ${cfError?.message || zoneResp.statusText} (code: ${cfError?.code ?? zoneResp.status})`,
+        detail: envStatus,
+      };
+    }
+
+    return {
+      success: true,
+      message: `✅ Cloudflare connection OK — ${addrData.result?.length ?? 0} destination address(es) registered, ${zoneData.result?.length ?? 0} routing rule(s) active.`,
+      detail: envStatus,
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Unexpected error testing Cloudflare connection" };
+  }
+}
+
+/**
+ * Action: Manually trigger Cloudflare Email Routing provisioning for the current user.
+ * Registers the destination email and creates the forwarding rule.
+ * Useful for testing after confirming Cloudflare credentials are working.
+ */
+export async function provisionCloudflareRouteAction() {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { success: false, message: "Unauthorized" };
+
+    const adminClient = createAdminClient();
+    const { data: profile, error: dbError } = await adminClient
+      .from("users")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (dbError || !profile) return { success: false, message: "Profile not found" };
+
+    // Step 1: Register destination email
+    await addDestinationAddress(profile.destination_email);
+
+    // Step 2: Check if verified in Cloudflare
+    const statusCheck = await getDestinationStatus(profile.destination_email);
+    if (!statusCheck.verified) {
+      return {
+        success: false,
+        message: "Destination email registered but not yet verified in Cloudflare. Check your inbox for Cloudflare's verification email and click the link, then try again.",
+      };
+    }
+
+    // Step 3: Create or update routing rule
+    let routeId = profile.cloudflare_route_id;
+    if (routeId) {
+      await updateRoute(routeId, profile.phone_number, profile.destination_email);
+    } else {
+      routeId = await createRoute(profile.phone_number, profile.destination_email);
+    }
+
+    // Step 4: Update DB
+    await adminClient
+      .from("users")
+      .update({ cloudflare_route_id: routeId, status: "active" })
+      .eq("id", user.id);
+
+    await adminClient.from("audit_logs").insert({
+      user_id: user.id,
+      action: "manual_cloudflare_provision",
+      metadata: { route_id: routeId, destination_email: profile.destination_email },
+    });
+
+    return {
+      success: true,
+      message: `✅ Cloudflare route provisioned! Route ID: ${routeId}. Email forwarding is now active.`,
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Cloudflare provisioning failed" };
+  }
+}
