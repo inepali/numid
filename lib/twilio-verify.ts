@@ -183,6 +183,9 @@ export async function sendEmailVerification(email: string): Promise<{ success: b
     };
   } catch (error: any) {
     console.error("[SendGrid Email Verify ERROR] sendEmailVerification failed:", error);
+    if (error.response && error.response.body && error.response.body.errors) {
+      console.error("[SendGrid Detailed Response Body Errors]:", JSON.stringify(error.response.body.errors, null, 2));
+    }
     return {
       success: false,
       message: error.message || "Failed to send email verification",
