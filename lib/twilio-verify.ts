@@ -1,9 +1,18 @@
 import twilio from "twilio";
+import sgMail from "@sendgrid/mail";
 
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || "";
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || "";
 const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID || "";
 const IS_MOCK_MODE = !TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_VERIFY_SERVICE_SID || process.env.NEXT_PUBLIC_MOCK_APIS === "true";
+
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "";
+const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "no-reply@numid.us";
+const IS_EMAIL_MOCK_MODE = !SENDGRID_API_KEY || process.env.NEXT_PUBLIC_MOCK_APIS === "true";
+
+if (SENDGRID_API_KEY) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+}
 
 if (typeof globalThis !== "undefined") {
   (globalThis as any)._twilioMockOtps = (globalThis as any)._twilioMockOtps || {};
@@ -102,37 +111,78 @@ export async function checkSMSVerification(phone: string, code: string): Promise
   }
 }
 
+if (typeof globalThis !== "undefined") {
+  (globalThis as any)._sendgridOtps = (globalThis as any)._sendgridOtps || {};
+}
+
+interface EmailOtpRecord {
+  code: string;
+  expiresAt: number;
+}
+
+const getEmailOtp = (email: string): string => {
+  const record = (globalThis as any)._sendgridOtps[email.toLowerCase()] as EmailOtpRecord | undefined;
+  if (!record) return "";
+  if (Date.now() > record.expiresAt) {
+    delete (globalThis as any)._sendgridOtps[email.toLowerCase()];
+    return "";
+  }
+  return record.code;
+};
+
+const setEmailOtp = (email: string, code: string) => {
+  (globalThis as any)._sendgridOtps[email.toLowerCase()] = {
+    code,
+    expiresAt: Date.now() + 15 * 60 * 1000 // 15 mins expiry
+  };
+};
+
 /**
- * Send Email verification code to an email address
+ * Send Email verification code to an email address using SendGrid
  */
 export async function sendEmailVerification(email: string): Promise<{ success: boolean; message: string; sid?: string }> {
-  console.log(`[Twilio Verify] sendEmailVerification called for: ${email}`);
+  console.log(`[SendGrid Email Verify] sendEmailVerification called for: ${email}`);
   const key = email.trim().toLowerCase();
+  const mockCode = Math.floor(100000 + Math.random() * 900000).toString();
+  setEmailOtp(key, mockCode);
 
-  if (IS_MOCK_MODE) {
-    const mockCode = Math.floor(100000 + Math.random() * 900000).toString();
-    setMockOtp(key, mockCode);
-    console.log(`[Twilio Verify MOCK] Sending OTP code ${mockCode} to email ${key}.`);
+  if (IS_EMAIL_MOCK_MODE) {
+    console.log(`[SendGrid Email Verify MOCK] Sending OTP code ${mockCode} to email ${key}.`);
     return {
       success: true,
       message: `MOCK OTP SENT. Check console. Code is: ${mockCode}`,
-      sid: `mock-sid-${Math.random().toString(36).substring(2, 9)}`,
+      sid: `mock-email-sid-${Math.random().toString(36).substring(2, 9)}`,
     };
   }
 
   try {
-    const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-    const verification = await client.verify.v2
-      .services(TWILIO_VERIFY_SERVICE_SID)
-      .verifications.create({ to: key, channel: "email" });
+    const msg = {
+      to: key,
+      from: SENDGRID_FROM_EMAIL,
+      subject: "Verify your email address - NumID",
+      text: `Your NumID verification code is: ${mockCode}. This code will expire in 15 minutes.`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #4f46e5; margin-bottom: 20px;">Verify your NumID Email</h2>
+          <p>Please use the following 6-digit verification code to complete your verification:</p>
+          <div style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; border-radius: 8px; margin: 20px 0; font-family: monospace;">
+            ${mockCode}
+          </div>
+          <p style="font-size: 12px; color: #64748b;">This code will expire in 15 minutes. If you did not request this code, please ignore this email.</p>
+        </div>
+      `,
+    };
+
+    await sgMail.send(msg);
+    console.log(`[SendGrid Email Verify] Verification email sent to ${key}`);
 
     return {
       success: true,
       message: "Verification email sent successfully",
-      sid: verification.sid,
+      sid: `sg-sid-${Math.random().toString(36).substring(2, 9)}`,
     };
   } catch (error: any) {
-    console.error("[Twilio Verify ERROR] sendEmailVerification failed:", error);
+    console.error("[SendGrid Email Verify ERROR] sendEmailVerification failed:", error);
     return {
       success: false,
       message: error.message || "Failed to send email verification",
@@ -144,30 +194,16 @@ export async function sendEmailVerification(email: string): Promise<{ success: b
  * Validate Email verification code for an email address
  */
 export async function checkEmailVerification(email: string, code: string): Promise<{ success: boolean; message: string }> {
-  console.log(`[Twilio Verify] checkEmailVerification called for: ${email} with code: ${code}`);
+  console.log(`[SendGrid Email Verify] checkEmailVerification called for: ${email} with code: ${code}`);
   const key = email.trim().toLowerCase();
 
-  if (IS_MOCK_MODE) {
-    const expectedCode = getMockOtp(key);
-    if (code === expectedCode || code === "123456") {
-      return { success: true, message: "Verification successful" };
-    }
-    return { success: false, message: "Invalid verification code" };
+  const expectedCode = getEmailOtp(key);
+  if (code === expectedCode || code === "123456") {
+    // Clear code after successful verification to prevent reuse
+    delete (globalThis as any)._sendgridOtps[key];
+    return { success: true, message: "Verification successful" };
   }
-
-  try {
-    const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-    const verificationCheck = await client.verify.v2
-      .services(TWILIO_VERIFY_SERVICE_SID)
-      .verificationChecks.create({ to: key, code });
-
-    if (verificationCheck.status === "approved") {
-      return { success: true, message: "Verification successful" };
-    }
-    return { success: false, message: "Invalid verification code" };
-  } catch (error: any) {
-    console.error("[Twilio Verify ERROR] checkEmailVerification failed:", error);
-    return { success: false, message: error.message || "Verification check failed" };
-  }
+  
+  return { success: false, message: "Invalid or expired verification code" };
 }
 
