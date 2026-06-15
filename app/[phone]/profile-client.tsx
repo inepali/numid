@@ -89,7 +89,7 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
   const [activeTab, setActiveTab] = useState<string>("all");
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(profile.numid_address);
+    navigator.clipboard.writeText(profile.phone_number);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -164,19 +164,19 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
 
         {/* User Identity Info */}
         <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-          {formatPhoneNumber(profile.phone_number)}
+          {profile.numid_address}
         </h1>
         
         {/* Public NumID Address */}
         <div className="mt-3 flex items-center justify-between gap-3 bg-slate-55 dark:bg-slate-900/80 border border-slate-200 dark:border-white/5 rounded-2xl px-4 py-2.5 w-full select-all font-mono text-xs text-indigo-700 dark:text-indigo-300">
           <div className="flex items-center space-x-2 truncate">
-            <Mail className="w-3.5 h-3.5 text-indigo-605 dark:text-indigo-400 shrink-0" />
-            <span className="truncate">{profile.numid_address}</span>
+            <Smartphone className="w-3.5 h-3.5 text-indigo-605 dark:text-indigo-400 shrink-0" />
+            <span className="truncate">{formatPhoneNumber(profile.phone_number)}</span>
           </div>
           <button 
             onClick={handleCopy}
             className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all cursor-pointer shrink-0"
-            title="Copy Email"
+            title="Copy Phone Number"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
