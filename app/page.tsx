@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   LockKeyhole,
   X,
+  Menu,
   Loader2,
   AlertCircle
 } from "lucide-react";
@@ -29,6 +30,7 @@ export default function LandingPage() {
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [animationStep, setAnimationStep] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Login modal state
   const [loginOpen, setLoginOpen] = useState(false);
@@ -130,7 +132,7 @@ export default function LandingPage() {
 
       {/* Navigation */}
       <header className="sticky top-0 z-50 border-b border-white/5 bg-black/50 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <span className="font-display font-extrabold text-white text-lg tracking-wider">N</span>
@@ -147,46 +149,129 @@ export default function LandingPage() {
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </nav>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <button
               id="nav-sign-in-btn"
               onClick={openLogin}
-              className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-4 py-2"
+              className="hidden sm:block text-sm font-medium text-slate-300 hover:text-white transition-colors px-3 py-2"
             >
               Sign In
             </button>
             <Link 
               href="/signup" 
-              className="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 hover:-translate-y-0.5"
+              className="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs sm:text-sm font-semibold px-3 py-2 sm:px-4 rounded-xl transition-all shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 hover:-translate-y-0.5"
+            >
+              Get Started
+            </Link>
+            {/* Hamburger button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="block md:hidden p-2 rounded-lg bg-slate-900 border border-white/5 text-slate-400 hover:text-white transition-all ml-1"
+              aria-label="Toggle Menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Drawer Menu */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[100] md:hidden bg-black/95 backdrop-blur-lg flex flex-col p-6 animate-fadeIn">
+          {/* Close & Header */}
+          <div className="flex items-center justify-between h-16 border-b border-white/5 mb-8">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+                <span className="font-display font-extrabold text-white text-sm">N</span>
+              </div>
+              <span className="font-display font-extrabold text-white text-md tracking-tight">
+                Num<span className="text-indigo-400">ID</span>
+              </span>
+            </div>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-2 rounded-lg bg-slate-900 border border-white/5 text-slate-400 hover:text-white transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Links */}
+          <nav className="flex flex-col space-y-6 text-lg font-medium text-slate-300">
+            <a 
+              href="#features" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-white transition-colors py-2 border-b border-white/5"
+            >
+              Features
+            </a>
+            <a 
+              href="#visualizer" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-white transition-colors py-2 border-b border-white/5"
+            >
+              How it Works
+            </a>
+            <a 
+              href="#pricing" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-white transition-colors py-2 border-b border-white/5"
+            >
+              Pricing
+            </a>
+            <a 
+              href="#faq" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-white transition-colors py-2 border-b border-white/5"
+            >
+              FAQ
+            </a>
+          </nav>
+
+          {/* CTAs */}
+          <div className="mt-auto flex flex-col gap-4">
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                openLogin();
+              }}
+              className="w-full bg-slate-900 border border-white/10 hover:bg-slate-800 text-slate-200 font-semibold py-3.5 rounded-xl transition-all text-center text-sm"
+            >
+              Sign In
+            </button>
+            <Link 
+              href="/signup" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl transition-all text-center text-sm shadow-lg shadow-indigo-600/10"
             >
               Get Started
             </Link>
           </div>
         </div>
-      </header>
+      )}
 
       {/* Hero Section */}
-      <section className="relative max-w-7xl mx-auto px-6 pt-20 pb-16 text-center">
+      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-10 sm:pb-16 text-center">
         <div className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 mb-8 text-xs font-semibold text-indigo-300">
           <Sparkles className="w-3.5 h-3.5" />
           <span>Launch Special: Permanent free custom routing</span>
         </div>
         
-        <h1 className="font-display text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-6 max-w-4xl mx-auto leading-tight">
+        <h1 className="font-display text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white mb-6 max-w-4xl mx-auto leading-tight">
           Your Phone Number. <br />
           <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
             Your Permanent Email.
           </span>
         </h1>
         
-        <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+        <p className="text-base sm:text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
           Never change your public email address again. Forward emails sent to your phone number at <span className="text-white font-medium">numid.us</span> to any destination. Fast, private, and memorable.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 sm:mb-20">
           <Link 
             href="/signup" 
-            className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold px-8 py-4 rounded-2xl transition-all shadow-xl shadow-indigo-500/10 flex items-center justify-center space-x-2 group hover:-translate-y-0.5"
+            className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold px-8 py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/10 flex items-center justify-center space-x-2 group hover:-translate-y-0.5"
           >
             <span>Claim Your NumID Now</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -200,13 +285,13 @@ export default function LandingPage() {
         </div>
 
         {/* Animated Visualizer Mockup */}
-        <div id="visualizer" className="max-w-4xl mx-auto border border-white/5 rounded-3xl bg-slate-950/60 backdrop-blur p-6 md:p-8 shadow-2xl relative">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900 border border-white/10 rounded-full px-4 py-1 text-xs text-slate-400 flex items-center gap-1.5">
+        <div id="visualizer" className="max-w-4xl mx-auto border border-white/5 rounded-2xl sm:rounded-3xl bg-slate-950/60 backdrop-blur p-5 sm:p-6 md:p-8 shadow-2xl relative">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900 border border-white/10 rounded-full px-4 py-1 text-xs text-slate-400 flex items-center gap-1.5 whitespace-nowrap">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
             <span>Interactive Forwarding Simulator</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-8 md:gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 md:gap-4 mt-4">
             
             {/* Sender / Outgoing */}
             <div className={`p-5 rounded-2xl border transition-all duration-500 text-left ${animationStep === 0 ? "bg-indigo-950/40 border-indigo-500/30 ring-1 ring-indigo-500/20" : "bg-slate-900/40 border-white/5"}`}>
@@ -221,7 +306,7 @@ export default function LandingPage() {
               </div>
               <div className="space-y-2">
                 <div className="h-2 bg-slate-800 rounded w-1/3" />
-                <div className="h-6 bg-slate-800/50 rounded flex items-center px-2 text-[10px] text-slate-400 font-mono">
+                <div className="h-6 bg-slate-800/50 rounded flex items-center px-2 text-[10px] text-slate-400 font-mono overflow-x-auto whitespace-nowrap">
                   To: 5154146054@numid.us
                 </div>
                 <div className="h-10 bg-slate-800/30 rounded p-2 text-[10px] text-slate-500">
@@ -231,20 +316,42 @@ export default function LandingPage() {
             </div>
 
             {/* Cloudflare Routing Hub */}
-            <div className="flex flex-col items-center justify-center py-4">
+            <div className="flex flex-col items-center justify-center py-2 md:py-4">
+              {/* Connecting vertical line (Sender -> CF) visible only on mobile */}
+              <div className="w-1 h-8 bg-slate-800/50 rounded mb-2 relative overflow-hidden md:hidden">
+                <div 
+                  className="absolute left-0 right-0 bg-indigo-500 rounded transition-all duration-1000"
+                  style={{
+                    top: animationStep === 0 ? "0%" : animationStep === 1 ? "50%" : "100%",
+                    height: animationStep === 1 ? "50%" : animationStep === 0 ? "0%" : "100%"
+                  }}
+                />
+              </div>
+
               <div className="relative w-16 h-16 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center">
                 <div className={`absolute inset-0 rounded-2xl bg-indigo-500/10 blur transition-opacity duration-1000 ${animationStep === 1 || animationStep === 2 ? "opacity-100" : "opacity-0"}`} />
                 <Zap className={`w-8 h-8 ${animationStep === 1 || animationStep === 2 ? "text-indigo-400 animate-pulse" : "text-slate-600"}`} />
               </div>
               <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mt-3">Cloudflare DNS</span>
               
-              {/* Connecting animated line */}
+              {/* Connecting animated line (desktop) */}
               <div className="w-full h-1 bg-slate-800/50 rounded mt-4 relative overflow-hidden hidden md:block">
                 <div 
                   className="absolute top-0 bottom-0 bg-indigo-500 rounded transition-all duration-1000"
                   style={{
                     left: animationStep === 0 ? "0%" : animationStep === 1 ? "30%" : animationStep === 2 ? "70%" : "100%",
                     width: animationStep === 3 ? "0%" : "20%"
+                  }}
+                />
+              </div>
+
+              {/* Connecting vertical line (CF -> Destination) visible only on mobile */}
+              <div className="w-1 h-8 bg-slate-800/50 rounded mt-2 relative overflow-hidden md:hidden">
+                <div 
+                  className="absolute left-0 right-0 bg-indigo-500 rounded transition-all duration-1000"
+                  style={{
+                    top: animationStep === 2 ? "0%" : animationStep === 3 ? "50%" : "100%",
+                    height: animationStep === 3 ? "50%" : animationStep === 2 ? "0%" : "100%"
                   }}
                 />
               </div>
@@ -282,19 +389,19 @@ export default function LandingPage() {
       </section>
 
       {/* Core Features Grid */}
-      <section id="features" className="max-w-7xl mx-auto px-6 py-24 border-t border-white/5">
-        <div className="text-center mb-16">
-          <h2 className="font-display text-3xl md:text-5xl font-extrabold text-white mb-4">
+      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-24 border-t border-white/5">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="font-display text-2xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4">
             Built for Memorability and Control.
           </h2>
-          <p className="text-slate-400 max-w-xl mx-auto">
+          <p className="text-slate-400 max-w-xl mx-auto text-sm sm:text-base">
             Harness the power of Cloudflare DNS routing mapped to your phone number.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           
-          <div className="p-8 rounded-2xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-all hover:bg-slate-900/60 group">
+          <div className="p-5 sm:p-8 rounded-2xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-all hover:bg-slate-900/60 group">
             <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-6 group-hover:scale-110 transition-transform">
               <Smartphone className="w-6 h-6" />
             </div>
@@ -304,7 +411,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="p-8 rounded-2xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-all hover:bg-slate-900/60 group">
+          <div className="p-5 sm:p-8 rounded-2xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-all hover:bg-slate-900/60 group">
             <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 mb-6 group-hover:scale-110 transition-transform">
               <Zap className="w-6 h-6" />
             </div>
@@ -314,7 +421,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="p-8 rounded-2xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-all hover:bg-slate-900/60 group">
+          <div className="p-5 sm:p-8 rounded-2xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-all hover:bg-slate-900/60 group">
             <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 mb-6 group-hover:scale-110 transition-transform">
               <LockKeyhole className="w-6 h-6" />
             </div>
@@ -324,7 +431,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="p-8 rounded-2xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-all hover:bg-slate-900/60 group col-span-1 md:col-span-1">
+          <div className="p-5 sm:p-8 rounded-2xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-all hover:bg-slate-900/60 group col-span-1 md:col-span-1">
             <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-6 group-hover:scale-110 transition-transform">
               <RefreshCw className="w-6 h-6" />
             </div>
@@ -334,7 +441,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="p-8 rounded-2xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-all hover:bg-slate-900/60 group col-span-1 md:col-span-2">
+          <div className="p-5 sm:p-8 rounded-2xl bg-slate-900/40 border border-white/5 hover:border-white/10 transition-all hover:bg-slate-900/60 group col-span-1 md:col-span-2">
             <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400 mb-6 group-hover:scale-110 transition-transform">
               <ShieldCheck className="w-6 h-6" />
             </div>
@@ -348,12 +455,12 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="max-w-7xl mx-auto px-6 py-24 border-t border-white/5">
-        <div className="text-center mb-12">
-          <h2 className="font-display text-3xl md:text-5xl font-extrabold text-white mb-4">
+      <section id="pricing" className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-24 border-t border-white/5">
+        <div className="text-center mb-8 sm:mb-12">
+          <h2 className="font-display text-2xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4">
             Simple, Transparent Pricing.
           </h2>
-          <p className="text-slate-400 max-w-xl mx-auto">
+          <p className="text-slate-400 max-w-xl mx-auto text-sm sm:text-base">
             Choose the plan that fits your digital identity needs.
           </p>
 
@@ -373,10 +480,10 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
           
           {/* Free Plan */}
-          <div className="p-8 rounded-3xl bg-slate-950 border border-white/5 flex flex-col justify-between relative">
+          <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-950 border border-white/5 flex flex-col justify-between relative">
             <div>
               <h3 className="text-xl font-bold text-white mb-2">Free Plan</h3>
               <p className="text-slate-400 text-xs mb-6">Permanent forwarding for your phone address</p>
@@ -415,7 +522,7 @@ export default function LandingPage() {
           </div>
 
           {/* Premium Plan (Placeholder) */}
-          <div className="p-8 rounded-3xl bg-slate-950 border border-indigo-500/30 flex flex-col justify-between relative ring-1 ring-indigo-500/20">
+          <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-950 border border-indigo-500/30 flex flex-col justify-between relative ring-1 ring-indigo-500/20">
             <div className="absolute top-0 right-8 -translate-y-1/2 bg-indigo-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
               Coming Soon
             </div>
@@ -468,12 +575,12 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="max-w-4xl mx-auto px-6 py-24 border-t border-white/5">
-        <div className="text-center mb-16">
-          <h2 className="font-display text-3xl md:text-5xl font-extrabold text-white mb-4">
+      <section id="faq" className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-24 border-t border-white/5">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="font-display text-2xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4">
             Frequently Asked Questions
           </h2>
-          <p className="text-slate-400">
+          <p className="text-slate-400 text-sm sm:text-base">
             Answers to common questions about routing and accounts.
           </p>
         </div>
@@ -486,16 +593,16 @@ export default function LandingPage() {
             >
               <button
                 onClick={() => toggleFaq(index)}
-                className="w-full p-6 flex items-center justify-between text-left font-bold text-white hover:text-indigo-300 transition-colors"
+                className="w-full p-5 sm:p-6 flex items-center justify-between text-left font-bold text-white hover:text-indigo-300 transition-colors text-sm sm:text-base gap-3"
               >
                 <span>{faq.q}</span>
-                <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform ${activeFaq === index ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform shrink-0 ${activeFaq === index ? "rotate-180" : ""}`} />
               </button>
               
               <div 
-                className={`transition-all duration-300 ease-in-out ${activeFaq === index ? "max-h-60 opacity-100" : "max-h-0 opacity-0 pointer-events-none"}`}
+                className={`transition-all duration-300 ease-in-out ${activeFaq === index ? "max-h-[300px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"}`}
               >
-                <p className="px-6 pb-6 text-sm text-slate-400 leading-relaxed">
+                <p className="px-5 sm:px-6 pb-5 sm:pb-6 text-xs sm:text-sm text-slate-400 leading-relaxed">
                   {faq.a}
                 </p>
               </div>
@@ -506,7 +613,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-12 bg-slate-950/40 text-sm text-slate-500">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="flex items-center space-x-2">
             <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center">
               <span className="font-display font-extrabold text-white text-xs">N</span>
@@ -514,16 +621,16 @@ export default function LandingPage() {
             <span className="font-display font-semibold text-white">NumID</span>
           </div>
           
-          <div className="flex flex-wrap justify-center gap-8 text-xs text-slate-400">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-xs text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
-            <span className="text-slate-600">|</span>
+            <span className="text-slate-600 hidden sm:inline">|</span>
             <span>Domain: numid.us</span>
             <span>App: numid.dev</span>
           </div>
 
-          <div>
+          <div className="text-xs">
             &copy; {new Date().getFullYear()} NumID. All rights reserved.
           </div>
         </div>
@@ -532,14 +639,11 @@ export default function LandingPage() {
       {/* Login Modal */}
       {loginOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) closeLogin(); }}
         >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-
           {/* Modal card */}
-          <div className="relative w-full max-w-md bg-slate-950 border border-white/8 rounded-3xl p-8 shadow-2xl animate-fadeIn">
+          <div className="relative w-full max-w-md bg-slate-950 border border-white/8 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl animate-fadeIn">
             {/* Close button */}
             <button
               id="login-modal-close"

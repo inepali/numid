@@ -196,7 +196,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-black text-slate-100 flex flex-col justify-center items-center px-6 py-12 overflow-hidden font-sans">
+    <div className="relative min-h-screen bg-black text-slate-100 flex flex-col justify-center items-center px-4 py-8 sm:px-6 sm:py-12 overflow-hidden font-sans">
       
       {/* Background radial glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-indigo-950/15 blur-[120px] pointer-events-none" />
@@ -212,18 +212,26 @@ export default function SignupPage() {
       </Link>
 
       {/* Signup Container Card */}
-      <div className="w-full max-w-md bg-slate-950/60 border border-white/5 backdrop-blur-xl rounded-3xl p-8 shadow-2xl relative">
+      <div className="w-full max-w-md bg-slate-950/60 border border-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl relative">
         
         {/* Step Indicator */}
         {step !== "EMAIL_PENDING" && (
           <div className="flex justify-between items-center mb-8 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-            <span className={step === "PHONE_INPUT" ? "text-indigo-400 font-bold" : "text-slate-400"}>1. Phone</span>
-            <div className="h-px bg-white/5 flex-grow mx-2" />
-            <span className={step === "OTP_INPUT" ? "text-indigo-400 font-bold" : "text-slate-400"}>2. SMS</span>
-            <div className="h-px bg-white/5 flex-grow mx-2" />
-            <span className={step === "ACCOUNT_DETAILS" ? "text-indigo-400 font-bold" : "text-slate-400"}>3. Details</span>
-            <div className="h-px bg-white/5 flex-grow mx-2" />
-            <span className={step === "EMAIL_OTP_INPUT" ? "text-indigo-400 font-bold" : "text-slate-400"}>4. Email</span>
+            <span className={step === "PHONE_INPUT" ? "text-indigo-400 font-bold" : "text-slate-400"}>
+              <span className="hidden sm:inline">1. </span>Phone
+            </span>
+            <div className="h-px bg-white/5 flex-grow mx-1 sm:mx-2" />
+            <span className={step === "OTP_INPUT" ? "text-indigo-400 font-bold" : "text-slate-400"}>
+              <span className="hidden sm:inline">2. </span>SMS
+            </span>
+            <div className="h-px bg-white/5 flex-grow mx-1 sm:mx-2" />
+            <span className={step === "ACCOUNT_DETAILS" ? "text-indigo-400 font-bold" : "text-slate-400"}>
+              <span className="hidden sm:inline">3. </span>Details
+            </span>
+            <div className="h-px bg-white/5 flex-grow mx-1 sm:mx-2" />
+            <span className={step === "EMAIL_OTP_INPUT" ? "text-indigo-400 font-bold" : "text-slate-400"}>
+              <span className="hidden sm:inline">4. </span>Email
+            </span>
           </div>
         )}
 

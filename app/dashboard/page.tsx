@@ -364,7 +364,7 @@ export default function DashboardPage() {
       
       {/* Header bar */}
       <header className="sticky top-0 z-40 border-b border-white/5 bg-black/60 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Link href="/" className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center">
               <span className="font-display font-extrabold text-white text-base">N</span>
@@ -401,7 +401,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
         
         {/* Global Notifications */}
         {errorMsg && (
@@ -425,10 +425,10 @@ export default function DashboardPage() {
         )}
 
         {/* 1. Main Configuration Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           
           {/* Forwarding Status Card (Left block) */}
-          <div className="md:col-span-2 p-8 rounded-3xl bg-slate-950 border border-white/5 relative overflow-hidden flex flex-col justify-between shadow-xl">
+          <div className="md:col-span-2 p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-950 border border-white/5 relative overflow-hidden flex flex-col justify-between shadow-xl">
             <div className="absolute top-0 right-0 w-[200px] h-[200px] rounded-full bg-indigo-600/5 blur-[50px] pointer-events-none" />
 
             <div>
@@ -480,14 +480,14 @@ export default function DashboardPage() {
             </div>
 
             {/* Actions panel */}
-            <div className="flex flex-wrap items-center gap-3 mt-8 border-t border-white/5 pt-6">
+            <div className="flex flex-col sm:flex-row items-center gap-3 mt-8 border-t border-white/5 pt-6 w-full sm:w-auto">
               <button
                 onClick={() => {
                   setNewEmail(profile?.destination_email || "");
                   setShowEmailModal(true);
                 }}
                 disabled={isPending}
-                className="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all"
+                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all text-center flex items-center justify-center"
               >
                 Change Destination
               </button>
@@ -496,7 +496,7 @@ export default function DashboardPage() {
                 <button
                   onClick={handleCheckCloudflare}
                   disabled={isPending}
-                  className="bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/10 transition-all flex items-center gap-1.5"
+                  className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/10 transition-all flex items-center justify-center gap-1.5"
                 >
                   {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                   <span>Check Cloudflare Status</span>
@@ -507,7 +507,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Verification Indicators Panel (Right block) */}
-          <div className="p-8 rounded-3xl bg-slate-950 border border-white/5 flex flex-col justify-between shadow-xl">
+          <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-950 border border-white/5 flex flex-col justify-between shadow-xl">
             <div>
               <h3 className="font-display font-bold text-white text-lg mb-4">Verification Checklists</h3>
               <p className="text-xs text-slate-500 mb-6">Both verification checkmarks must be green to activate email forwarding routes.</p>
@@ -549,7 +549,7 @@ export default function DashboardPage() {
 
         {/* 2. Sandbox Testing Console (Visible if in Mock Mode) */}
         {process.env.NEXT_PUBLIC_MOCK_APIS === "true" && (
-          <div className="p-6 rounded-3xl bg-indigo-950/20 border border-indigo-500/20 shadow-lg relative">
+          <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-indigo-950/20 border border-indigo-500/20 shadow-lg relative">
             <div className="flex items-center space-x-2 text-indigo-400 mb-2">
               <Sparkles className="w-5 h-5 animate-pulse" />
               <h3 className="font-display font-bold text-white text-md">Mock Sandbox Console</h3>
@@ -559,7 +559,7 @@ export default function DashboardPage() {
             <button
               onClick={handleMockVerify}
               disabled={isPending}
-              className="bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-200 text-xs font-bold px-4 py-2 rounded-lg border border-indigo-500/30 transition-all flex items-center gap-1.5"
+              className="w-full sm:w-auto bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-200 text-xs font-bold px-4 py-2.5 rounded-xl border border-indigo-500/30 transition-all flex items-center justify-center gap-1.5"
             >
               {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>Simulate Cloudflare Email Link Verification Click</span>
@@ -568,13 +568,13 @@ export default function DashboardPage() {
         )}
 
         {/* 2b. Cloudflare Dev Console — always visible for testing */}
-        <div className="p-6 rounded-3xl bg-slate-900/60 border border-orange-500/20 shadow-lg relative">
-          <div className="flex items-center justify-between mb-3">
+        <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-900/60 border border-orange-500/20 shadow-lg relative">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
             <div className="flex items-center space-x-2">
               <Zap className="w-4 h-4 text-orange-400" />
               <h3 className="font-display font-bold text-white text-sm">Cloudflare Email Routing Dev Console</h3>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 uppercase tracking-wider">
+            <span className="w-fit text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 uppercase tracking-wider">
               {process.env.NEXT_PUBLIC_MOCK_APIS === "true" ? "Mock Mode" : "Live"}
             </span>
           </div>
@@ -582,12 +582,12 @@ export default function DashboardPage() {
             Use these controls to validate your Cloudflare credentials and manually trigger email routing provisioning for your account.
           </p>
 
-          <div className="flex flex-wrap gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <button
               id="cf-test-btn"
               onClick={handleTestCloudflare}
               disabled={cfLoading}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/10 transition-all flex items-center gap-1.5"
+              className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/10 transition-all flex items-center justify-center gap-1.5"
             >
               {cfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5 text-orange-400" />}
               <span>Test Cloudflare Connection</span>
@@ -597,7 +597,7 @@ export default function DashboardPage() {
               id="cf-provision-btn"
               onClick={handleProvisionCloudflare}
               disabled={cfLoading}
-              className="bg-orange-600/20 hover:bg-orange-600/30 text-orange-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-orange-500/30 transition-all flex items-center gap-1.5"
+              className="w-full sm:w-auto bg-orange-600/20 hover:bg-orange-600/30 text-orange-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-orange-500/30 transition-all flex items-center justify-center gap-1.5"
             >
               {cfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
               <span>Provision My Route Now</span>
@@ -621,7 +621,7 @@ export default function DashboardPage() {
         </div>
 
         {/* 3. History Logs Timeline */}
-        <div className="p-8 rounded-3xl bg-slate-950 border border-white/5 shadow-xl">
+        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-950 border border-white/5 shadow-xl">
           <div className="flex items-center space-x-2.5 mb-6">
             <History className="w-5 h-5 text-slate-400" />
             <h3 className="font-display font-bold text-white text-lg">Audit Trails</h3>
@@ -632,11 +632,11 @@ export default function DashboardPage() {
               No recent audit trail logs available.
             </div>
           ) : (
-            <div className="relative border-l border-white/5 ml-4 pl-6 space-y-6">
+            <div className="relative border-l border-white/5 ml-3 pl-4 space-y-6">
               {auditLogs.map((log) => (
                 <div key={log.id} className="relative text-left">
                   {/* Timeline point */}
-                  <span className="absolute -left-[31px] top-1.5 w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700" />
+                  <span className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-800 border border-slate-700" />
                   
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400">
                     <span className="font-semibold text-slate-300 uppercase tracking-wider">{log.action.replace(/_/g, " ")}</span>
@@ -657,17 +657,17 @@ export default function DashboardPage() {
         </div>
 
         {/* 4. Settings & Account deletion panel (Danger Zone) */}
-        <div className="p-8 rounded-3xl bg-slate-950 border border-white/5 flex flex-col sm:flex-row justify-between sm:items-center gap-6 shadow-xl">
+        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-950 border border-white/5 flex flex-col sm:flex-row justify-between sm:items-center gap-6 shadow-xl">
           <div>
             <h3 className="font-display font-bold text-white text-md">Danger & Support Zone</h3>
             <p className="text-xs text-slate-500 mt-1">Export your configurations or delete the account mapping permanently.</p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             <button
               onClick={handleExportData}
               disabled={isPending}
-              className="bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/10 transition-all flex items-center gap-1.5"
+              className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/10 transition-all flex items-center justify-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export Account JSON</span>
@@ -675,7 +675,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setShowDeleteModal(true)}
-              className="bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold px-4 py-2.5 rounded-xl border border-red-500/20 transition-all flex items-center gap-1.5"
+              className="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold px-4 py-2.5 rounded-xl border border-red-500/20 transition-all flex items-center justify-center gap-1.5"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Delete Account</span>
@@ -687,8 +687,8 @@ export default function DashboardPage() {
 
       {/* DIALOG 1: Update email */}
       {showEmailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
-          <div className="w-full max-w-md bg-slate-950 border border-white/5 rounded-3xl p-6 shadow-2xl animate-scaleIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-slate-950 border border-white/5 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl animate-scaleIn">
             <h3 className="font-display font-bold text-white text-lg mb-2">Update Destination Email</h3>
             
             {emailModalPhase === "ENTER_EMAIL" ? (
@@ -782,8 +782,8 @@ export default function DashboardPage() {
 
       {/* DIALOG 2: Confirm deletion */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
-          <div className="w-full max-w-md bg-slate-950 border border-red-500/20 rounded-3xl p-6 shadow-2xl animate-scaleIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-slate-950 border border-red-500/20 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl animate-scaleIn">
             <div className="flex items-center space-x-2 text-red-400 mb-2">
               <AlertTriangle className="w-5 h-5 animate-pulse" />
               <h3 className="font-display font-bold text-white text-lg">Teardown Mapping Permanently?</h3>
