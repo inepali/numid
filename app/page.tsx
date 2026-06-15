@@ -256,7 +256,7 @@ export default function LandingPage() {
       <section className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-10 sm:pb-16 text-center">
         <div className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 mb-8 text-xs font-semibold text-indigo-650 dark:text-indigo-300">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Launch Special: Permanent free custom routing</span>
+          <span>Launch Special: Permanent free email routing</span>
         </div>
         
         <h1 className="font-display text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-6 max-w-4xl mx-auto leading-tight">
