@@ -338,7 +338,7 @@ export default function LandingPage() {
                 <div className={`absolute inset-0 rounded-2xl bg-indigo-500/10 blur transition-opacity duration-1000 ${animationStep === 1 || animationStep === 2 ? "opacity-100" : "opacity-0"}`} />
                 <Zap className={`w-8 h-8 ${animationStep === 1 || animationStep === 2 ? "text-indigo-650 dark:text-indigo-400 animate-pulse" : "text-slate-400 dark:text-slate-600"}`} />
               </div>
-              <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mt-3">Cloudflare DNS</span>
+              <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mt-3">Backend DNS</span>
               
               {/* Connecting animated line (desktop) */}
               <div className="w-full h-1 bg-slate-200 dark:bg-slate-800/50 rounded mt-4 relative overflow-hidden hidden md:block">
