@@ -307,7 +307,7 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
                 <span>Verified NumID Identity</span>
               </span>
               <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                {formatPhoneNumber(profile.phone_number)}
+                {profile.numid_address}
               </p>
             </div>
 

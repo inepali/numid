@@ -1136,7 +1136,7 @@ export default function DashboardPage() {
                 <span>Verified NumID Profile</span>
               </span>
               <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                {profile?.phone_number ? profile.phone_number : ""}
+                {profile?.numid_address ? profile.numid_address : ""}
               </p>
             </div>
 
