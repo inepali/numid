@@ -42,6 +42,7 @@ import {
   Share2,
 } from "lucide-react";
 import Link from "next/link";
+import ThemeToggle from "@/app/components/ThemeToggle";
 
 // Available services schema
 type ProfileCategoryKey = "socials" | "messaging" | "professional" | "business";
@@ -346,10 +347,9 @@ export default function DashboardPage() {
       }
     });
   };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex flex-col justify-center items-center text-slate-400">
+      <div className="min-h-screen bg-slate-50 dark:bg-black flex flex-col justify-center items-center text-slate-500 dark:text-slate-400">
         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-4" />
         <p className="text-xs">Securing database connection...</p>
       </div>
@@ -359,36 +359,40 @@ export default function DashboardPage() {
   // FALLBACK: Sign In Screen
   if (isAuthenticated === false) {
     return (
-      <div className="relative min-h-screen bg-black text-slate-100 flex flex-col justify-center items-center px-6 py-12 overflow-hidden font-sans">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-indigo-950/10 blur-[120px] pointer-events-none" />
+      <div className="relative min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col justify-center items-center px-6 py-12 overflow-hidden font-sans">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-indigo-900/5 dark:bg-indigo-950/10 blur-[120px] pointer-events-none" />
+
+        <div className="absolute top-6 right-6">
+          <ThemeToggle />
+        </div>
 
         <Link href="/" className="flex items-center space-x-2 mb-8">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center">
             <span className="font-display font-extrabold text-white text-base">N</span>
           </div>
-          <span className="font-display font-extrabold text-white text-lg tracking-tight">
-            Num<span className="text-indigo-400">ID</span>
+          <span className="font-display font-extrabold text-slate-900 dark:text-white text-lg tracking-tight">
+            Num<span className="text-indigo-650 dark:text-indigo-400">ID</span>
           </span>
         </Link>
 
-        <div className="w-full max-w-md bg-slate-950/60 border border-white/5 backdrop-blur-xl rounded-3xl p-8 shadow-2xl">
+        <div className="w-full max-w-md bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-white/5 backdrop-blur-xl rounded-3xl p-8 shadow-2xl">
           <div className="text-left mb-6">
-            <h2 className="font-display text-2xl font-bold text-white mb-2">Welcome Back</h2>
-            <p className="text-xs text-slate-400">Sign in to manage your NumID email routing rules.</p>
+            <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Welcome Back</h2>
+            <p className="text-xs text-slate-505 dark:text-slate-400">Sign in to manage your NumID email routing rules.</p>
           </div>
 
           {loginError && (
-            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center space-x-2.5">
-              <ShieldAlert className="w-4 h-4 text-red-400 shrink-0" />
+            <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-300 text-xs flex items-center space-x-2.5">
+              <ShieldAlert className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0" />
               <span>{loginError}</span>
             </div>
           )}
 
           <form onSubmit={handleSignIn} className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-wide">Email Address</label>
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Email Address</label>
               <div className="relative flex items-center">
-                <div className="absolute left-4 text-slate-500 pointer-events-none">
+                <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
                   <Mail className="w-4 h-4" />
                 </div>
                 <input
@@ -396,16 +400,16 @@ export default function DashboardPage() {
                   placeholder="name@email.com"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none"
+                  className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-wide">Password</label>
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Password</label>
               <div className="relative flex items-center">
-                <div className="absolute left-4 text-slate-500 pointer-events-none">
+                <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
@@ -413,7 +417,7 @@ export default function DashboardPage() {
                   placeholder="••••••••"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none"
+                  className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none"
                   required
                 />
               </div>
@@ -422,7 +426,7 @@ export default function DashboardPage() {
             <button
               type="submit"
               disabled={loginLoading}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 mt-6 shadow-lg shadow-indigo-600/10"
+              className="w-full bg-indigo-600 hover:bg-indigo-505 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 mt-6 shadow-lg shadow-indigo-600/10"
             >
               {loginLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -435,8 +439,8 @@ export default function DashboardPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-slate-400">
-            Don't have a NumID? <Link href="/signup" className="text-indigo-400 hover:text-indigo-300 font-semibold">Sign Up</Link>
+          <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
+            Don't have a NumID? <Link href="/signup" className="text-indigo-650 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold">Sign Up</Link>
           </div>
         </div>
       </div>
@@ -445,17 +449,17 @@ export default function DashboardPage() {
 
   // MAIN: Dashboard View
   return (
-    <div className="min-h-screen bg-black text-slate-100 font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300">
       
       {/* Header bar */}
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-black/60 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-slate-200 dark:border-white/5 bg-white/60 dark:bg-black/60 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Link href="/" className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center">
               <span className="font-display font-extrabold text-white text-base">N</span>
             </Link>
-            <span className="font-display font-extrabold text-white text-lg tracking-tight">
-              Num<span className="text-indigo-400">ID</span>
+            <span className="font-display font-extrabold text-slate-900 dark:text-white text-lg tracking-tight">
+              Num<span className="text-indigo-600 dark:text-indigo-400">ID</span>
             </span>
           </div>
 
@@ -463,21 +467,23 @@ export default function DashboardPage() {
             {profile?.role === "admin" && (
               <Link
                 href="/admin"
-                className="text-xs bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                className="text-xs bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-205 dark:border-indigo-500/20 font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span>Admin Console</span>
               </Link>
             )}
 
-            <div className="hidden sm:flex items-center space-x-2 text-slate-400 text-xs font-semibold bg-slate-900 border border-white/5 rounded-full px-3.5 py-1.5">
-              <User className="w-3.5 h-3.5 text-slate-500" />
+            <div className="hidden sm:flex items-center space-x-2 text-slate-600 dark:text-slate-400 text-xs font-semibold bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-full px-3.5 py-1.5">
+              <User className="w-3.5 h-3.5 text-slate-400 dark:text-slate-505" />
               <span>{profile?.destination_email}</span>
             </div>
 
+            <ThemeToggle />
+
             <button 
               onClick={handleSignOut}
-              className="text-slate-400 hover:text-white transition-colors"
+              className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -490,20 +496,20 @@ export default function DashboardPage() {
         
         {/* Global Notifications */}
         {errorMsg && (
-          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-start space-x-2.5">
-            <ShieldAlert className="w-4.5 h-4.5 text-red-400 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-300 text-xs flex items-start space-x-2.5">
+            <ShieldAlert className="w-4.5 h-4.5 text-red-500 dark:text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="font-bold text-red-200">Execution Error</p>
+              <p className="font-bold text-red-800 dark:text-red-200">Execution Error</p>
               <p className="mt-0.5">{errorMsg}</p>
             </div>
           </div>
         )}
 
         {successMsg && (
-          <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs flex items-start space-x-2.5">
-            <CheckCircle className="w-4.5 h-4.5 text-indigo-400 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-xl bg-indigo-50/40 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 text-indigo-750 dark:text-indigo-300 text-xs flex items-start space-x-2.5">
+            <CheckCircle className="w-4.5 h-4.5 text-indigo-500 dark:text-indigo-400 shrink-0 mt-0.5" />
             <div className="flex-grow">
-              <p className="font-bold text-indigo-200">Status Update</p>
+              <p className="font-bold text-indigo-850 dark:text-indigo-200">Status Update</p>
               <p className="mt-0.5">{successMsg}</p>
             </div>
           </div>
@@ -513,49 +519,49 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           
           {/* Forwarding Status Card (Left block) */}
-          <div className="md:col-span-2 p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-950 border border-white/5 relative overflow-hidden flex flex-col justify-between shadow-xl">
-            <div className="absolute top-0 right-0 w-[200px] h-[200px] rounded-full bg-indigo-600/5 blur-[50px] pointer-events-none" />
+          <div className="md:col-span-2 p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-none">
+            <div className="absolute top-0 right-0 w-[200px] h-[200px] rounded-full bg-indigo-650/[0.03] dark:bg-indigo-600/5 blur-[50px] pointer-events-none" />
 
             <div>
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">My NumID</span>
-                  <h2 className="font-display text-2xl md:text-3xl font-extrabold text-white font-mono mt-1 select-all hover:text-indigo-300 transition-colors">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">My NumID</span>
+                  <h2 className="font-display text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white font-mono mt-1 select-all hover:text-indigo-650 dark:hover:text-indigo-300 transition-colors">
                     {profile?.numid_address?.replace("+", "")}
                   </h2>
                 </div>
 
-                <span className={`px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wide ${(profile?.phone_verified && profile?.email_verified) || profile?.status === "active" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-orange-500/20 text-orange-300 border border-orange-500/30"}`}>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wide ${(profile?.phone_verified && profile?.email_verified) || profile?.status === "active" ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30" : "bg-orange-50 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-500/30"}`}>
                   {(profile?.phone_verified && profile?.email_verified) || profile?.status === "active" ? "VERIFIED" : (profile?.status?.toUpperCase() || "PENDING")}
                 </span>
               </div>
 
               {/* Status details row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-white/5 pt-6 mt-6">
-                <div className="flex items-center space-x-3 bg-slate-900/40 p-4 rounded-2xl border border-white/5">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${profile?.phone_verified ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-200 dark:border-white/5 pt-6 mt-6">
+                <div className="flex items-center space-x-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200 dark:border-white/5">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${profile?.phone_verified ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-red-50 dark:bg-red-500/10 text-red-650 dark:text-red-400"}`}>
                     <Smartphone className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-slate-500 uppercase font-bold">Verified Phone</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Verified Phone</p>
                     <div className="flex items-center space-x-2">
-                      <p className="text-xs text-white font-medium">{profile?.phone_number}</p>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${profile?.phone_verified ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                      <p className="text-xs text-slate-900 dark:text-white font-medium">{profile?.phone_number}</p>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${profile?.phone_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
                         {profile?.phone_verified ? "Verified" : "Pending"}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 bg-slate-900/40 p-4 rounded-2xl border border-white/5">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${profile?.email_verified ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                <div className="flex items-center space-x-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200 dark:border-white/5">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${profile?.email_verified ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-red-50 dark:bg-red-500/10 text-red-650 dark:text-red-400"}`}>
                     <Mail className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-slate-500 uppercase font-bold">Destination Email</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Destination Email</p>
                     <div className="flex items-center space-x-2">
-                      <p className="text-xs text-white font-medium truncate max-w-[150px]">{profile?.destination_email}</p>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${profile?.email_verified ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                      <p className="text-xs text-slate-900 dark:text-white font-medium truncate max-w-[150px]">{profile?.destination_email}</p>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${profile?.email_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
                         {profile?.email_verified ? "Verified" : "Pending"}
                       </span>
                     </div>
@@ -565,7 +571,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Actions panel */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 mt-8 border-t border-white/5 pt-6 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-3 mt-8 border-t border-slate-200 dark:border-white/5 pt-6 w-full sm:w-auto">
               <button
                 onClick={() => {
                   setNewEmail(profile?.destination_email || "");
@@ -581,7 +587,7 @@ export default function DashboardPage() {
                 <button
                   onClick={handleCheckCloudflare}
                   disabled={isPending}
-                  className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/10 transition-all flex items-center justify-center gap-1.5"
+                  className="w-full sm:w-auto bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center gap-1.5"
                 >
                   {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                   <span>Check Cloudflare Status</span>
@@ -592,31 +598,31 @@ export default function DashboardPage() {
           </div>
 
           {/* Verification Indicators Panel (Right block) */}
-          <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-950 border border-white/5 flex flex-col justify-between shadow-xl">
+          <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 flex flex-col justify-between shadow-sm dark:shadow-none">
             <div>
-              <h3 className="font-display font-bold text-white text-lg mb-4">Verification Checklists</h3>
-              <p className="text-xs text-slate-500 mb-6">Both verification checkmarks must be green to activate email forwarding routes.</p>
+              <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg mb-4">Verification Checklists</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Both verification checkmarks must be green to activate email forwarding routes.</p>
               
               <div className="space-y-4">
                 
                 {/* Phone Item */}
-                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-white/5">
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/5">
                   <div className="flex items-center space-x-3">
-                    <Smartphone className="w-4 h-4 text-slate-400" />
-                    <span className="text-xs text-slate-300">Phone Verified</span>
+                    <Smartphone className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">Phone Verified</span>
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${profile?.phone_verified ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${profile?.phone_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
                     {profile?.phone_verified ? "Verified" : "Pending"}
                   </span>
                 </div>
 
                 {/* Email Item */}
-                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-white/5">
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/5">
                   <div className="flex items-center space-x-3">
-                    <Mail className="w-4 h-4 text-slate-400" />
-                    <span className="text-xs text-slate-300">Email Verified</span>
+                    <Mail className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">Email Verified</span>
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${profile?.email_verified ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${profile?.email_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
                     {profile?.email_verified ? "Verified" : "Pending"}
                   </span>
                 </div>
@@ -625,7 +631,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Created date information */}
-            <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mt-6 pt-4 border-t border-white/5">
+            <div className="text-[10px] text-slate-500 dark:text-slate-450 uppercase font-bold tracking-wider mt-6 pt-4 border-t border-slate-200 dark:border-white/5">
               Created at: {profile ? new Date(profile.created_at).toLocaleDateString() : ""}
             </div>
           </div>
@@ -633,19 +639,19 @@ export default function DashboardPage() {
         </div>
 
         {/* Public Identity Profile Card */}
-        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-950 border border-white/5 shadow-xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
+        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/5">
             <div>
-              <div className="flex items-center space-x-2 text-indigo-400">
+              <div className="flex items-center space-x-2 text-indigo-650 dark:text-indigo-400">
                 <Share2 className="w-5 h-5" />
-                <h3 className="font-display font-bold text-white text-lg">Public Identity Profile</h3>
+                <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg">Public Identity Profile</h3>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Configure your social networks and contact links. Your profile is live at{" "}
                 <Link
                   href={`/${profile?.phone_number?.replace("+", "")}`}
                   target="_blank"
-                  className="text-indigo-400 hover:text-indigo-300 font-semibold underline inline-flex items-center gap-1"
+                  className="text-indigo-655 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold underline inline-flex items-center gap-1"
                 >
                   <span>numid.dev/{profile?.phone_number?.replace("+", "")}</span>
                   <ExternalLink className="w-3 h-3" />
@@ -656,7 +662,7 @@ export default function DashboardPage() {
             <button
               onClick={handleSaveSocialLinks}
               disabled={isPending}
-              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-505 active:bg-indigo-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
             >
               {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>Save Profile Links</span>
@@ -664,15 +670,15 @@ export default function DashboardPage() {
           </div>
 
           {/* Tab buttons */}
-          <div className="flex flex-wrap border-b border-white/5 gap-1">
+          <div className="flex flex-wrap border-b border-slate-200 dark:border-white/5 gap-1">
             {(Object.keys(PROFILE_CATEGORIES) as ProfileCategoryKey[]).map((tabKey) => (
               <button
                 key={tabKey}
                 onClick={() => setActiveProfileTab(tabKey)}
                 className={`px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-all border-b-2 -mb-px ${
                   activeProfileTab === tabKey
-                    ? "border-indigo-500 text-white bg-slate-900/50"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
+                    ? "border-indigo-500 text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900/50"
+                    : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
                 }`}
               >
                 {PROFILE_CATEGORIES[tabKey].title}
@@ -683,7 +689,7 @@ export default function DashboardPage() {
           {/* Tab content */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-slate-400 font-semibold">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
                 Active {PROFILE_CATEGORIES[activeProfileTab].title} links:
               </span>
               
@@ -701,7 +707,7 @@ export default function DashboardPage() {
                       }
                     }}
                     defaultValue=""
-                    className="bg-slate-900 border border-white/10 text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500/40 cursor-pointer"
+                    className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500/40 cursor-pointer"
                   >
                     <option value="" disabled>+ Add Link / Profile...</option>
                     {Object.entries(PROFILE_CATEGORIES[activeProfileTab].services)
@@ -714,7 +720,7 @@ export default function DashboardPage() {
                   </select>
                 </div>
               ) : (
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wide">
+                <span className="text-[10px] text-slate-400 dark:text-slate-505 font-bold uppercase tracking-wide">
                   All active links added
                 </span>
               )}
@@ -724,7 +730,7 @@ export default function DashboardPage() {
             {Object.keys(PROFILE_CATEGORIES[activeProfileTab].services).filter(
               (key) => socialLinks[key] !== undefined
             ).length === 0 ? (
-              <div className="text-center py-8 rounded-2xl bg-slate-900/10 border border-dashed border-white/5 text-xs text-slate-500">
+              <div className="text-center py-8 rounded-2xl bg-slate-50 dark:bg-slate-900/10 border border-dashed border-slate-200 dark:border-white/5 text-xs text-slate-500">
                 No links added in this category yet. Select a service above to add it.
               </div>
             ) : (
@@ -734,19 +740,19 @@ export default function DashboardPage() {
                   .map(([key, service]) => (
                     <div
                       key={key}
-                      className="flex items-center gap-3 bg-slate-900/40 p-3.5 rounded-xl border border-white/5 text-xs focus-within:border-indigo-500/30 transition-colors"
+                      className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/40 p-3.5 rounded-xl border border-slate-200 dark:border-white/5 text-xs focus-within:border-indigo-500/30 transition-colors"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 font-bold shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 font-bold shrink-0">
                         {service.name.substring(0, 2)}
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">
+                        <label className="text-[10px] text-slate-505 dark:text-slate-550 font-bold uppercase block mb-1">
                           {service.name}
                         </label>
                         <div className="flex items-center">
                           {service.prefix && (
-                            <span className="text-slate-500 select-none pr-1.5 font-mono text-[11px] max-w-[120px] sm:max-w-none truncate shrink-0">
+                            <span className="text-slate-550 select-none pr-1.5 font-mono text-[11px] max-w-[120px] sm:max-w-none truncate shrink-0">
                               {service.prefix.replace("https://", "")}
                             </span>
                           )}
@@ -758,7 +764,7 @@ export default function DashboardPage() {
                               const newVal = e.target.value;
                               setSocialLinks((prev) => ({ ...prev, [key]: newVal }));
                             }}
-                            className="bg-transparent border-none p-0 text-white placeholder-slate-600 focus:outline-none focus:ring-0 flex-1 min-w-0 font-mono text-xs"
+                            className="bg-transparent border-none p-0 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-0 flex-1 min-w-0 font-mono text-xs"
                           />
                         </div>
                       </div>
@@ -771,7 +777,7 @@ export default function DashboardPage() {
                             return updated;
                           });
                         }}
-                        className="p-2 text-slate-500 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-all shrink-0"
+                        className="p-2 text-slate-400 dark:text-slate-505 hover:text-red-650 dark:hover:text-red-400 rounded-lg hover:bg-red-500/5 dark:hover:bg-red-500/10 transition-all shrink-0"
                         title="Remove Link"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -785,17 +791,17 @@ export default function DashboardPage() {
 
         {/* 2. Sandbox Testing Console (Visible if in Mock Mode) */}
         {process.env.NEXT_PUBLIC_MOCK_APIS === "true" && (
-          <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-indigo-950/20 border border-indigo-500/20 shadow-lg relative">
-            <div className="flex items-center space-x-2 text-indigo-400 mb-2">
+          <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-500/20 shadow-sm relative">
+            <div className="flex items-center space-x-2 text-indigo-650 dark:text-indigo-400 mb-2">
               <Sparkles className="w-5 h-5 animate-pulse" />
-              <h3 className="font-display font-bold text-white text-md">Mock Sandbox Console</h3>
+              <h3 className="font-display font-bold text-slate-900 dark:text-white text-md">Mock Sandbox Console</h3>
             </div>
-            <p className="text-xs text-slate-400 mb-4">You are running the application in <strong>Mock Mode</strong>. Click below to simulate user clicking Cloudflare's email verification link.</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">You are running the application in <strong>Mock Mode</strong>. Click below to simulate user clicking Cloudflare's email verification link.</p>
             
             <button
               onClick={handleMockVerify}
               disabled={isPending}
-              className="w-full sm:w-auto bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-200 text-xs font-bold px-4 py-2.5 rounded-xl border border-indigo-500/30 transition-all flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600/30 dark:hover:bg-indigo-600/40 text-indigo-750 dark:text-indigo-200 text-xs font-bold px-4 py-2.5 rounded-xl border border-indigo-200 dark:border-indigo-500/30 transition-all flex items-center justify-center gap-1.5"
             >
               {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>Simulate Cloudflare Email Link Verification Click</span>
@@ -804,17 +810,17 @@ export default function DashboardPage() {
         )}
 
         {/* 2b. Cloudflare Dev Console — always visible for testing */}
-        <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-900/60 border border-orange-500/20 shadow-lg relative">
+        <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-orange-50/10 dark:bg-slate-900/60 border border-orange-200 dark:border-orange-500/20 shadow-sm relative">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
             <div className="flex items-center space-x-2">
-              <Zap className="w-4 h-4 text-orange-400" />
-              <h3 className="font-display font-bold text-white text-sm">Cloudflare Email Routing Dev Console</h3>
+              <Zap className="w-4 h-4 text-orange-650 dark:text-orange-400" />
+              <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm">Cloudflare Email Routing Dev Console</h3>
             </div>
-            <span className="w-fit text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 uppercase tracking-wider">
+            <span className="w-fit text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20 uppercase tracking-wider">
               {process.env.NEXT_PUBLIC_MOCK_APIS === "true" ? "Mock Mode" : "Live"}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mb-4">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
             Use these controls to validate your Cloudflare credentials and manually trigger email routing provisioning for your account.
           </p>
 
@@ -823,9 +829,9 @@ export default function DashboardPage() {
               id="cf-test-btn"
               onClick={handleTestCloudflare}
               disabled={cfLoading}
-              className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/10 transition-all flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center gap-1.5"
             >
-              {cfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5 text-orange-400" />}
+              {cfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" />}
               <span>Test Cloudflare Connection</span>
             </button>
 
@@ -833,7 +839,7 @@ export default function DashboardPage() {
               id="cf-provision-btn"
               onClick={handleProvisionCloudflare}
               disabled={cfLoading}
-              className="w-full sm:w-auto bg-orange-600/20 hover:bg-orange-600/30 text-orange-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-orange-500/30 transition-all flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto bg-orange-50 hover:bg-orange-100 dark:bg-orange-600/20 dark:hover:bg-orange-600/30 text-orange-700 dark:text-orange-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-orange-200 dark:border-orange-500/30 transition-all flex items-center justify-center gap-1.5"
             >
               {cfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
               <span>Provision My Route Now</span>
@@ -843,12 +849,12 @@ export default function DashboardPage() {
           {cfResult && (
             <div className={`rounded-xl p-4 border text-xs space-y-2 ${
               cfResult.success
-                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
-                : "bg-red-500/10 border-red-500/20 text-red-300"
+                ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-250 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-300"
+                : "bg-red-50 dark:bg-red-500/10 border-red-250 dark:border-red-500/20 text-red-800 dark:text-red-300"
             }`}>
               <p className="font-semibold">{cfResult.message}</p>
               {cfResult.detail && (
-                <pre className="text-[10px] font-mono text-slate-400 bg-black/20 rounded-lg p-3 overflow-x-auto">
+                <pre className="text-[10px] font-mono text-slate-650 dark:text-slate-400 bg-slate-100 dark:bg-black/20 rounded-lg p-3 overflow-x-auto">
                   {JSON.stringify(cfResult.detail, null, 2)}
                 </pre>
               )}
@@ -857,10 +863,10 @@ export default function DashboardPage() {
         </div>
 
         {/* 3. History Logs Timeline */}
-        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-950 border border-white/5 shadow-xl">
+        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none">
           <div className="flex items-center space-x-2.5 mb-6">
-            <History className="w-5 h-5 text-slate-400" />
-            <h3 className="font-display font-bold text-white text-lg">Audit Trails</h3>
+            <History className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+            <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg">Audit Trails</h3>
           </div>
 
           {auditLogs.length === 0 ? (
@@ -868,21 +874,21 @@ export default function DashboardPage() {
               No recent audit trail logs available.
             </div>
           ) : (
-            <div className="relative border-l border-white/5 ml-3 pl-4 space-y-6">
+            <div className="relative border-l border-slate-200 dark:border-white/5 ml-3 pl-4 space-y-6">
               {auditLogs.map((log) => (
                 <div key={log.id} className="relative text-left">
                   {/* Timeline point */}
-                  <span className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-800 border border-slate-700" />
+                  <span className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-350 dark:border-slate-700" />
                   
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400">
-                    <span className="font-semibold text-slate-300 uppercase tracking-wider">{log.action.replace(/_/g, " ")}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-650 dark:text-slate-400">
+                    <span className="font-semibold text-slate-850 dark:text-slate-300 uppercase tracking-wider">{log.action.replace(/_/g, " ")}</span>
                     <span className="text-[10px] text-slate-500 font-mono mt-1 sm:mt-0">
                       {new Date(log.created_at).toLocaleString()}
                     </span>
                   </div>
                   
                   {log.metadata && Object.keys(log.metadata).length > 0 && (
-                    <pre className="mt-2 p-3 rounded-lg bg-slate-900/50 border border-white/5 text-[10px] font-mono text-slate-500 overflow-x-auto max-w-full">
+                    <pre className="mt-2 p-3 rounded-lg bg-slate-55 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 text-[10px] font-mono text-slate-600 dark:text-slate-500 overflow-x-auto max-w-full">
                       {JSON.stringify(log.metadata, null, 2)}
                     </pre>
                   )}
@@ -893,17 +899,17 @@ export default function DashboardPage() {
         </div>
 
         {/* 4. Settings & Account deletion panel (Danger Zone) */}
-        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-950 border border-white/5 flex flex-col sm:flex-row justify-between sm:items-center gap-6 shadow-xl">
+        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 flex flex-col sm:flex-row justify-between sm:items-center gap-6 shadow-sm dark:shadow-none">
           <div>
-            <h3 className="font-display font-bold text-white text-md">Danger & Support Zone</h3>
-            <p className="text-xs text-slate-500 mt-1">Export your configurations or delete the account mapping permanently.</p>
+            <h3 className="font-display font-bold text-slate-900 dark:text-white text-md">Danger & Support Zone</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-450 mt-1">Export your configurations or delete the account mapping permanently.</p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             <button
               onClick={handleExportData}
               disabled={isPending}
-              className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-white/10 transition-all flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export Account JSON</span>
@@ -911,7 +917,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setShowDeleteModal(true)}
-              className="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold px-4 py-2.5 rounded-xl border border-red-500/20 transition-all flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto bg-red-55 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-750 dark:text-red-400 text-xs font-semibold px-4 py-2.5 rounded-xl border border-red-200 dark:border-red-500/20 transition-all flex items-center justify-center gap-1.5"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Delete Account</span>
@@ -923,35 +929,35 @@ export default function DashboardPage() {
 
       {/* DIALOG 1: Update email */}
       {showEmailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-slate-950 border border-white/5 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl animate-scaleIn">
-            <h3 className="font-display font-bold text-white text-lg mb-2">Update Destination Email</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl animate-scaleIn">
+            <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg mb-2">Update Destination Email</h3>
             
             {emailModalPhase === "ENTER_EMAIL" ? (
               <form onSubmit={handleSendEmailOTP} className="space-y-4">
-                <p className="text-xs text-slate-400">Enter your new forwarding address. We will send a verification code to this inbox.</p>
+                <p className="text-xs text-slate-550 dark:text-slate-400">Enter your new forwarding address. We will send a verification code to this inbox.</p>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-2 uppercase tracking-wide">New Email Address</label>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-450 block mb-2 uppercase tracking-wide">New Email Address</label>
                   <input
                     type="email"
                     placeholder="name@example.com"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-white focus:outline-none"
+                    className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
                     required
                   />
                 </div>
 
-                <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-[10px] text-orange-300 flex items-start gap-2">
+                <div className="p-3 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 rounded-xl text-[10px] text-orange-700 dark:text-orange-300 flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <p>Warning: Forwarding will temporarily pause until both NumID is verified and Cloudflare's own routing email link is approved.</p>
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-white/5">
                   <button
                     type="button"
                     onClick={() => setShowEmailModal(false)}
-                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl"
+                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl"
                   >
                     Cancel
                   </button>
@@ -968,35 +974,35 @@ export default function DashboardPage() {
               </form>
             ) : (
               <form onSubmit={handleVerifyEmailOTP} className="space-y-4">
-                <div className="flex items-center space-x-1 text-slate-500 hover:text-white transition-colors cursor-pointer text-[10px] font-semibold" onClick={() => setEmailModalPhase("ENTER_EMAIL")}>
+                <div className="flex items-center space-x-1 text-slate-500 hover:text-slate-900 dark:text-slate-505 dark:hover:text-white transition-colors cursor-pointer text-[10px] font-semibold" onClick={() => setEmailModalPhase("ENTER_EMAIL")}>
                   <ArrowLeft className="w-3 h-3" />
                   <span>Change email address</span>
                 </div>
                 
-                <p className="text-xs text-slate-400">We've sent a 6-digit verification code to <span className="text-white font-semibold">{newEmail}</span>.</p>
+                <p className="text-xs text-slate-550 dark:text-slate-400">We've sent a 6-digit verification code to <span className="text-slate-900 dark:text-white font-semibold">{newEmail}</span>.</p>
                 
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-2 uppercase tracking-wide">Enter Code</label>
+                  <label className="text-[10px] font-bold text-slate-550 dark:text-slate-450 block mb-2 uppercase tracking-wide">Enter Code</label>
                   <input
                     type="text"
                     placeholder="123456"
                     maxLength={6}
                     value={newEmailOtp}
                     onChange={(e) => setNewEmailOtp(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-white focus:outline-none tracking-widest text-center text-lg font-mono"
+                    className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none tracking-widest text-center text-lg font-mono"
                     required
                   />
                 </div>
 
-                <div className="bg-slate-900/40 border border-white/5 rounded-xl p-3 text-[10px] text-slate-400">
-                  <span className="font-bold text-indigo-400">💡 Local Sandbox Tip:</span> Check server logs for the OTP or enter <code className="font-mono text-white bg-slate-800 px-1 py-0.5 rounded">123456</code>.
+                <div className="bg-slate-100 dark:bg-slate-900/40 border border-slate-250 dark:border-white/5 rounded-xl p-3 text-[10px] text-slate-650 dark:text-slate-400">
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">💡 Local Sandbox Tip:</span> Check server logs for the OTP or enter <code className="font-mono text-slate-900 dark:text-white bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">123456</code>.
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-white/5">
                   <button
                     type="button"
                     onClick={() => setShowEmailModal(false)}
-                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl"
+                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl"
                   >
                     Cancel
                   </button>
@@ -1018,21 +1024,21 @@ export default function DashboardPage() {
 
       {/* DIALOG 2: Confirm deletion */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-slate-950 border border-red-500/20 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl animate-scaleIn">
-            <div className="flex items-center space-x-2 text-red-400 mb-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white dark:bg-slate-950 border border-red-200 dark:border-red-500/20 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl animate-scaleIn">
+            <div className="flex items-center space-x-2 text-red-650 dark:text-red-400 mb-2">
               <AlertTriangle className="w-5 h-5 animate-pulse" />
-              <h3 className="font-display font-bold text-white text-lg">Teardown Mapping Permanently?</h3>
+              <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg">Teardown Mapping Permanently?</h3>
             </div>
-            <p className="text-xs text-slate-400 mb-6 leading-relaxed">
-              This action is irreversible. All of your forwards to <strong className="text-white font-mono">{profile?.numid_address}</strong> will fail immediately, and your settings will be purged.
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+              This action is irreversible. All of your forwards to <strong className="text-slate-900 dark:text-white font-mono">{profile?.numid_address}</strong> will fail immediately, and your settings will be purged.
             </p>
             
-            <div className="flex justify-end space-x-3 pt-4 border-t border-white/5">
+            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-white/5">
               <button
                 type="button"
                 onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl"
+                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl"
               >
                 Keep Account
               </button>
@@ -1049,7 +1055,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   Share2,
 } from "lucide-react";
 import Link from "next/link";
+import ThemeToggle from "@/app/components/ThemeToggle";
 
 interface PublicProfileClientProps {
   profile: {
@@ -21,33 +22,33 @@ interface PublicProfileClientProps {
 }
 
 const SERVICE_META: Record<string, { name: string; prefix: string; color: string; label: string }> = {
-  facebook: { name: "Facebook", prefix: "https://facebook.com/", color: "bg-blue-600/10 border-blue-500/20 text-blue-400 hover:bg-blue-600/20", label: "Add on Facebook" },
-  instagram: { name: "Instagram", prefix: "https://instagram.com/", color: "bg-pink-600/10 border-pink-500/20 text-pink-400 hover:bg-pink-600/20", label: "Follow on Instagram" },
-  linkedin: { name: "LinkedIn", prefix: "https://linkedin.com/in/", color: "bg-sky-600/10 border-sky-500/20 text-sky-400 hover:bg-sky-600/20", label: "Connect on LinkedIn" },
-  x: { name: "X (Twitter)", prefix: "https://x.com/", color: "bg-slate-800/20 border-slate-700/20 text-slate-300 hover:bg-slate-800/40", label: "Follow on X" },
-  tiktok: { name: "TikTok", prefix: "https://tiktok.com/@", color: "bg-rose-600/10 border-rose-500/20 text-rose-400 hover:bg-rose-600/20", label: "Follow on TikTok" },
-  youtube: { name: "YouTube", prefix: "https://youtube.com/@", color: "bg-red-600/10 border-red-500/20 text-red-400 hover:bg-red-600/20", label: "Subscribe on YouTube" },
-  threads: { name: "Threads", prefix: "https://threads.net/@", color: "bg-slate-800/20 border-slate-700/20 text-slate-300 hover:bg-slate-800/40", label: "Follow on Threads" },
-  whatsapp: { name: "WhatsApp", prefix: "https://wa.me/", color: "bg-emerald-600/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-600/20", label: "Message on WhatsApp" },
-  telegram: { name: "Telegram", prefix: "https://t.me/", color: "bg-cyan-600/10 border-cyan-500/20 text-cyan-400 hover:bg-cyan-600/20", label: "Message on Telegram" },
-  signal: { name: "Signal", prefix: "https://signal.me/#p/", color: "bg-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20", label: "Message on Signal" },
-  discord: { name: "Discord", prefix: "", color: "bg-violet-600/10 border-violet-500/20 text-violet-400 hover:bg-violet-600/20", label: "Add on Discord" },
-  messenger: { name: "Messenger", prefix: "https://m.me/", color: "bg-blue-500/10 border-blue-400/20 text-blue-400 hover:bg-blue-500/20", label: "Message on Messenger" },
-  github: { name: "GitHub", prefix: "https://github.com/", color: "bg-zinc-800/20 border-zinc-700/20 text-zinc-300 hover:bg-zinc-800/40", label: "View GitHub Profile" },
-  gitlab: { name: "GitLab", prefix: "https://gitlab.com/", color: "bg-orange-600/10 border-orange-500/20 text-orange-400 hover:bg-orange-600/20", label: "View GitLab Profile" },
-  behance: { name: "Behance", prefix: "https://behance.net/", color: "bg-blue-700/10 border-blue-600/20 text-blue-400 hover:bg-blue-700/20", label: "View Behance Portfolio" },
-  dribbble: { name: "Dribbble", prefix: "https://dribbble.com/", color: "bg-pink-500/10 border-pink-400/20 text-pink-400 hover:bg-pink-500/20", label: "View Dribbble Design" },
-  medium: { name: "Medium", prefix: "https://medium.com/@", color: "bg-zinc-800/20 border-zinc-700/20 text-zinc-300 hover:bg-zinc-800/40", label: "Read on Medium" },
-  substack: { name: "Substack", prefix: "https://", color: "bg-orange-500/10 border-orange-400/20 text-orange-400 hover:bg-orange-500/20", label: "Subscribe on Substack" },
-  personal_website: { name: "Personal Website", prefix: "", color: "bg-teal-600/10 border-teal-500/20 text-teal-400 hover:bg-teal-600/20", label: "Visit Website" },
-  company_website: { name: "Company Website", prefix: "", color: "bg-teal-700/10 border-teal-600/20 text-teal-400 hover:bg-teal-700/20", label: "Visit Company" },
-  contact_form: { name: "Contact Form", prefix: "", color: "bg-cyan-600/10 border-cyan-500/20 text-cyan-400 hover:bg-cyan-600/20", label: "Open Contact Form" },
-  phone: { name: "Phone Call", prefix: "tel:", color: "bg-emerald-600/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-600/20", label: "Call Phone" },
-  sms: { name: "SMS Link", prefix: "sms:", color: "bg-sky-600/10 border-sky-500/20 text-sky-400 hover:bg-sky-600/20", label: "Send SMS" },
-  email: { name: "Email Link", prefix: "mailto:", color: "bg-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20", label: "Send Email" },
-  calendly: { name: "Calendly Link", prefix: "https://calendly.com/", color: "bg-blue-600/10 border-blue-500/20 text-blue-400 hover:bg-blue-600/20", label: "Book a Meeting" },
-  google_business: { name: "Google Business Profile", prefix: "", color: "bg-yellow-600/10 border-yellow-500/20 text-yellow-400 hover:bg-yellow-600/20", label: "View Business Profile" },
-  online_store: { name: "Online Store", prefix: "", color: "bg-purple-600/10 border-purple-500/20 text-purple-400 hover:bg-purple-600/20", label: "Visit Store" },
+  facebook: { name: "Facebook", prefix: "https://facebook.com/", color: "bg-blue-50 dark:bg-blue-600/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-600/20", label: "Add on Facebook" },
+  instagram: { name: "Instagram", prefix: "https://instagram.com/", color: "bg-pink-50 dark:bg-pink-600/10 border-pink-200 dark:border-pink-500/20 text-pink-700 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-pink-600/20", label: "Follow on Instagram" },
+  linkedin: { name: "LinkedIn", prefix: "https://linkedin.com/in/", color: "bg-sky-50 dark:bg-sky-600/10 border-sky-200 dark:border-sky-500/20 text-sky-700 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-600/20", label: "Connect on LinkedIn" },
+  x: { name: "X (Twitter)", prefix: "https://x.com/", color: "bg-slate-100 dark:bg-slate-800/20 border-slate-200 dark:border-slate-700/20 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800/40", label: "Follow on X" },
+  tiktok: { name: "TikTok", prefix: "https://tiktok.com/@", color: "bg-rose-50 dark:bg-rose-600/10 border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-600/20", label: "Follow on TikTok" },
+  youtube: { name: "YouTube", prefix: "https://youtube.com/@", color: "bg-red-50 dark:bg-red-600/10 border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-600/20", label: "Subscribe on YouTube" },
+  threads: { name: "Threads", prefix: "https://threads.net/@", color: "bg-slate-100 dark:bg-slate-800/20 border-slate-200 dark:border-slate-700/20 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800/40", label: "Follow on Threads" },
+  whatsapp: { name: "WhatsApp", prefix: "https://wa.me/", color: "bg-emerald-50 dark:bg-emerald-600/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-600/20", label: "Message on WhatsApp" },
+  telegram: { name: "Telegram", prefix: "https://t.me/", color: "bg-cyan-50 dark:bg-cyan-600/10 border-cyan-200 dark:border-cyan-500/20 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-100 dark:hover:bg-cyan-600/20", label: "Message on Telegram" },
+  signal: { name: "Signal", prefix: "https://signal.me/#p/", color: "bg-indigo-50 dark:bg-indigo-600/10 border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-600/20", label: "Message on Signal" },
+  discord: { name: "Discord", prefix: "", color: "bg-violet-50 dark:bg-violet-600/10 border-violet-200 dark:border-violet-500/20 text-violet-700 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-600/20", label: "Add on Discord" },
+  messenger: { name: "Messenger", prefix: "https://m.me/", color: "bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-400/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20", label: "Message on Messenger" },
+  github: { name: "GitHub", prefix: "https://github.com/", color: "bg-zinc-100 dark:bg-zinc-800/20 border-zinc-250 dark:border-zinc-700/20 text-zinc-750 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800/40", label: "View GitHub Profile" },
+  gitlab: { name: "GitLab", prefix: "https://gitlab.com/", color: "bg-orange-50 dark:bg-orange-600/10 border-orange-200 dark:border-orange-500/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-600/20", label: "View GitLab Profile" },
+  behance: { name: "Behance", prefix: "https://behance.net/", color: "bg-blue-50 dark:bg-blue-700/10 border-blue-200 dark:border-blue-600/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-700/20", label: "View Behance Portfolio" },
+  dribbble: { name: "Dribbble", prefix: "https://dribbble.com/", color: "bg-pink-50 dark:bg-pink-500/10 border-pink-200 dark:border-pink-400/20 text-pink-700 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-pink-500/20", label: "View Dribbble Design" },
+  medium: { name: "Medium", prefix: "https://medium.com/@", color: "bg-zinc-100 dark:bg-zinc-800/20 border-zinc-250 dark:border-zinc-700/20 text-zinc-750 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800/40", label: "Read on Medium" },
+  substack: { name: "Substack", prefix: "https://", color: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-400/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20", label: "Subscribe on Substack" },
+  personal_website: { name: "Personal Website", prefix: "", color: "bg-teal-50 dark:bg-teal-600/10 border-teal-200 dark:border-teal-500/20 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-600/20", label: "Visit Website" },
+  company_website: { name: "Company Website", prefix: "", color: "bg-teal-50 dark:bg-teal-700/10 border-teal-200 dark:border-teal-600/20 text-teal-705 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-700/20", label: "Visit Company" },
+  contact_form: { name: "Contact Form", prefix: "", color: "bg-cyan-50 dark:bg-cyan-600/10 border-cyan-200 dark:border-cyan-500/20 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-100 dark:hover:bg-cyan-600/20", label: "Open Contact Form" },
+  phone: { name: "Phone Call", prefix: "tel:", color: "bg-emerald-50 dark:bg-emerald-600/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-600/20", label: "Call Phone" },
+  sms: { name: "SMS Link", prefix: "sms:", color: "bg-sky-50 dark:bg-sky-600/10 border-sky-200 dark:border-sky-500/20 text-sky-700 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-600/20", label: "Send SMS" },
+  email: { name: "Email Link", prefix: "mailto:", color: "bg-indigo-50 dark:bg-indigo-600/10 border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-600/20", label: "Send Email" },
+  calendly: { name: "Calendly Link", prefix: "https://calendly.com/", color: "bg-blue-50 dark:bg-blue-600/10 border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-600/20", label: "Book a Meeting" },
+  google_business: { name: "Google Business Profile", prefix: "", color: "bg-yellow-50 dark:bg-yellow-600/10 border-yellow-200 dark:border-yellow-500/20 text-yellow-750 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-600/20", label: "View Business Profile" },
+  online_store: { name: "Online Store", prefix: "", color: "bg-purple-50 dark:bg-purple-600/10 border-purple-200 dark:border-purple-500/20 text-purple-700 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-600/20", label: "Visit Store" },
 };
 
 const CATEGORY_GROUPS = [
@@ -102,52 +103,57 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
   ];
 
   return (
-    <div className="relative min-h-screen bg-black text-slate-100 flex flex-col items-center justify-center px-4 py-12 overflow-hidden font-sans">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center px-4 py-12 overflow-hidden font-sans transition-colors duration-300">
       
+      {/* Floating Theme Toggle */}
+      <div className="fixed top-6 right-6 z-50">
+        <ThemeToggle />
+      </div>
+
       {/* Background gradients */}
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-900/10 blur-[130px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-violet-900/10 blur-[130px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-900/5 dark:bg-indigo-900/10 blur-[130px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-violet-900/5 dark:bg-violet-900/10 blur-[130px] pointer-events-none" />
 
       {/* Main Profile Card */}
-      <div className="w-full max-w-md bg-slate-950/60 border border-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl relative flex flex-col items-center text-center">
+      <div className="w-full max-w-md bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl relative flex flex-col items-center text-center">
         
         {/* Verification Checkmark */}
-        <div className="inline-flex items-center space-x-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wide mb-6">
-          <ShieldCheck className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
+        <div className="inline-flex items-center space-x-1.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wide mb-6">
+          <ShieldCheck className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>Verified Identity</span>
         </div>
 
         {/* User Identity Info */}
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           {formatPhoneNumber(profile.phone_number)}
         </h1>
         
         {/* Public NumID Address */}
-        <div className="mt-3 flex items-center justify-between gap-3 bg-slate-900/80 border border-white/5 rounded-2xl px-4 py-2.5 w-full select-all font-mono text-xs text-indigo-300">
+        <div className="mt-3 flex items-center justify-between gap-3 bg-slate-55 dark:bg-slate-900/80 border border-slate-200 dark:border-white/5 rounded-2xl px-4 py-2.5 w-full select-all font-mono text-xs text-indigo-700 dark:text-indigo-300">
           <div className="flex items-center space-x-2 truncate">
-            <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <Mail className="w-3.5 h-3.5 text-indigo-605 dark:text-indigo-400 shrink-0" />
             <span className="truncate">{profile.numid_address}</span>
           </div>
           <button 
             onClick={handleCopy}
-            className="p-1.5 rounded-lg bg-slate-800 border border-white/5 text-slate-400 hover:text-white transition-all hover:bg-slate-750 cursor-pointer shrink-0"
+            className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all cursor-pointer shrink-0"
             title="Copy Email"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
         </div>
 
         {/* Dynamic Category Tabs */}
         {availableGroups.length > 1 && (
-          <div className="flex flex-wrap items-center justify-center gap-1 mt-8 border-b border-white/5 pb-2.5 w-full">
+          <div className="flex flex-wrap items-center justify-center gap-1 mt-8 border-b border-slate-200 dark:border-white/5 pb-2.5 w-full">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === tab.key
-                    ? "bg-indigo-600 text-white"
-                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900"
                 }`}
               >
                 {tab.title}
@@ -159,7 +165,7 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
         {/* Profile Links Render */}
         <div className="mt-8 space-y-3.5 w-full">
           {availableGroups.length === 0 ? (
-            <div className="py-12 rounded-2xl bg-slate-900/20 border border-white/5 text-slate-500 text-xs">
+            <div className="py-12 rounded-2xl bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-white/5 text-slate-500 text-xs">
               This verified identity has not configured any public links yet.
             </div>
           ) : (
@@ -195,12 +201,12 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
                             className={`flex items-center justify-between p-4 rounded-2xl border transition-all hover:scale-[1.01] ${service.color}`}
                           >
                             <div className="flex items-center space-x-3.5 min-w-0">
-                              <div className="w-8 h-8 rounded-xl bg-black/10 flex items-center justify-center font-bold text-xs shrink-0 select-none">
+                              <div className="w-8 h-8 rounded-xl bg-black/5 dark:bg-black/10 flex items-center justify-center font-bold text-xs shrink-0 select-none">
                                 {service.name.substring(0, 2)}
                               </div>
                               <div className="text-left min-w-0">
                                 <p className="font-semibold text-sm truncate">{service.name}</p>
-                                <p className="text-[10px] text-slate-400 font-mono truncate max-w-[200px] sm:max-w-none">
+                                <p className="text-[10px] text-slate-605 dark:text-slate-400 font-mono truncate max-w-[200px] sm:max-w-none">
                                   {value}
                                 </p>
                               </div>
@@ -217,10 +223,10 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
         </div>
 
         {/* Footer brand */}
-        <div className="mt-12 border-t border-white/5 pt-6 flex flex-col items-center justify-center space-y-1.5 w-full text-slate-600 text-xs">
-          <Link href="/" className="flex items-center space-x-1.5 hover:text-indigo-400 transition-colors">
+        <div className="mt-12 border-t border-slate-200 dark:border-white/5 pt-6 flex flex-col items-center justify-center space-y-1.5 w-full text-slate-550 dark:text-slate-600 text-xs">
+          <Link href="/" className="flex items-center space-x-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
             <div className="w-5 h-5 rounded bg-indigo-600 flex items-center justify-center text-[10px] font-extrabold text-white">N</div>
-            <span className="font-bold text-slate-400">NumID Identity</span>
+            <span className="font-bold text-slate-600 dark:text-slate-400">NumID Identity</span>
           </Link>
           <p className="text-[10px]">Verify your contact profiles at numid.dev</p>
         </div>

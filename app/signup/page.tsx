@@ -10,6 +10,7 @@ import {
   signUpAction 
 } from "@/app/actions/auth";
 import { createBrowserClient } from "@supabase/ssr";
+import ThemeToggle from "@/app/components/ThemeToggle";
 import { 
   Lock, 
   Mail, 
@@ -196,40 +197,45 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-black text-slate-100 flex flex-col justify-center items-center px-4 py-8 sm:px-6 sm:py-12 overflow-hidden font-sans">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col justify-center items-center px-4 py-8 sm:px-6 sm:py-12 overflow-hidden font-sans transition-colors duration-300">
       
+      {/* Floating Theme Toggle in top-right */}
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       {/* Background radial glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-indigo-950/15 blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-indigo-900/5 dark:bg-indigo-950/15 blur-[120px] pointer-events-none" />
 
       {/* Header logo */}
       <Link href="/" className="flex items-center space-x-2 mb-8 group">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center">
           <span className="font-display font-extrabold text-white text-base">N</span>
         </div>
-        <span className="font-display font-extrabold text-white text-lg tracking-tight group-hover:text-indigo-400 transition-colors">
-          Num<span className="text-indigo-400 group-hover:text-indigo-300">ID</span>
+        <span className="font-display font-extrabold text-slate-900 dark:text-white text-lg tracking-tight group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
+          Num<span className="text-indigo-650 dark:text-indigo-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-300">ID</span>
         </span>
       </Link>
 
       {/* Signup Container Card */}
-      <div className="w-full max-w-md bg-slate-950/60 border border-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl relative">
+      <div className="w-full max-w-md bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl dark:shadow-none relative transition-colors duration-300">
         
         {/* Step Indicator */}
         {step !== "EMAIL_PENDING" && (
-          <div className="flex justify-between items-center mb-8 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-            <span className={step === "PHONE_INPUT" ? "text-indigo-400 font-bold" : "text-slate-400"}>
+          <div className="flex justify-between items-center mb-8 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <span className={step === "PHONE_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
               <span className="hidden sm:inline">1. </span>Phone
             </span>
-            <div className="h-px bg-white/5 flex-grow mx-1 sm:mx-2" />
-            <span className={step === "OTP_INPUT" ? "text-indigo-400 font-bold" : "text-slate-400"}>
+            <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
+            <span className={step === "OTP_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
               <span className="hidden sm:inline">2. </span>SMS
             </span>
-            <div className="h-px bg-white/5 flex-grow mx-1 sm:mx-2" />
-            <span className={step === "ACCOUNT_DETAILS" ? "text-indigo-400 font-bold" : "text-slate-400"}>
+            <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
+            <span className={step === "ACCOUNT_DETAILS" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
               <span className="hidden sm:inline">3. </span>Details
             </span>
-            <div className="h-px bg-white/5 flex-grow mx-1 sm:mx-2" />
-            <span className={step === "EMAIL_OTP_INPUT" ? "text-indigo-400 font-bold" : "text-slate-400"}>
+            <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
+            <span className={step === "EMAIL_OTP_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
               <span className="hidden sm:inline">4. </span>Email
             </span>
           </div>
@@ -237,15 +243,15 @@ export default function SignupPage() {
 
         {/* Global Error/Success Notification */}
         {errorMsg && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-start space-x-2.5 animate-fadeIn">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300 text-xs flex items-start space-x-2.5 animate-fadeIn">
+            <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0 mt-0.5" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-6 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs flex items-start space-x-2.5 animate-fadeIn">
-            <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+          <div className="mb-6 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-750 dark:text-indigo-300 text-xs flex items-start space-x-2.5 animate-fadeIn">
+            <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
             <span>{successMsg}</span>
           </div>
         )}
@@ -254,14 +260,14 @@ export default function SignupPage() {
         {step === "PHONE_INPUT" && (
           <form onSubmit={handleSendOTP} className="space-y-6">
             <div className="text-left">
-              <h2 className="font-display text-2xl font-bold text-white mb-2">Claim your NumID</h2>
-              <p className="text-xs text-slate-400">Enter your phone number to begin. We'll send an SMS code to verify ownership.</p>
+              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Claim your NumID</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Enter your phone number to begin. We'll send an SMS code to verify ownership.</p>
             </div>
 
             <div className="relative">
-              <label className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-wide">Phone Number</label>
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Phone Number</label>
               <div className="relative flex items-center">
-                <div className="absolute left-4 text-slate-500 pointer-events-none">
+                <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
                   <Smartphone className="w-5 h-5" />
                 </div>
                 <input
@@ -269,7 +275,7 @@ export default function SignupPage() {
                   placeholder="+15154146054"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono"
+                  className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono"
                   required
                 />
               </div>
@@ -293,8 +299,8 @@ export default function SignupPage() {
               )}
             </button>
 
-            <div className="bg-slate-900/30 border border-white/5 rounded-xl p-3.5 text-[11px] text-slate-400">
-              <span className="font-bold text-indigo-400">💡 Local Sandbox Tip:</span> If Twilio keys are not set, a mock code will print to the server log. Alternatively, use standard test code <code className="font-mono text-white bg-slate-800 px-1 py-0.5 rounded">123456</code> to verify instantly.
+            <div className="bg-slate-105 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 rounded-xl p-3.5 text-[11px] text-slate-600 dark:text-slate-400 transition-colors">
+              <span className="font-bold text-indigo-650 dark:text-indigo-400">💡 Local Sandbox Tip:</span> If Twilio keys are not set, a mock code will print to the server log. Alternatively, use standard test code <code className="font-mono text-slate-800 dark:text-white bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">123456</code> to verify instantly.
             </div>
           </form>
         )}
@@ -302,20 +308,20 @@ export default function SignupPage() {
         {/* STEP 2: SMS OTP code input */}
         {step === "OTP_INPUT" && (
           <form onSubmit={handleVerifyOTP} className="space-y-6">
-            <div className="flex items-center space-x-2 text-slate-500 hover:text-white transition-colors cursor-pointer text-xs font-semibold mb-2" onClick={() => setStep("PHONE_INPUT")}>
+            <div className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer text-xs font-semibold mb-2" onClick={() => setStep("PHONE_INPUT")}>
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Change phone number</span>
             </div>
             
             <div className="text-left">
-              <h2 className="font-display text-2xl font-bold text-white mb-2">Verify your phone</h2>
-              <p className="text-xs text-slate-400">We've sent a 6-digit code to <span className="text-white font-mono">{phone}</span>.</p>
+              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Verify your phone</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">We've sent a 6-digit code to <span className="text-slate-900 dark:text-white font-mono">{phone}</span>.</p>
             </div>
 
             <div className="relative">
-              <label className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-wide">Enter Code</label>
+              <label className="text-xs font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Enter Code</label>
               <div className="relative flex items-center">
-                <div className="absolute left-4 text-slate-500 pointer-events-none">
+                <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
                   <Lock className="w-5 h-5" />
                 </div>
                 <input
@@ -324,7 +330,7 @@ export default function SignupPage() {
                   maxLength={6}
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono tracking-widest text-center text-lg"
+                  className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono tracking-widest text-center text-lg font-bold"
                   required
                 />
               </div>
@@ -345,13 +351,13 @@ export default function SignupPage() {
               )}
             </button>
 
-            <div className="flex justify-between items-center text-xs text-slate-400 pt-2">
+            <div className="flex justify-between items-center text-xs text-slate-550 dark:text-slate-400 pt-2">
               <span>Didn't receive code?</span>
               <button
                 type="button"
                 onClick={handleResendOTP}
                 disabled={resendTimer > 0 || isPending}
-                className="text-indigo-400 hover:text-indigo-300 font-semibold disabled:text-slate-600 transition-colors"
+                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold disabled:text-slate-400 dark:disabled:text-slate-655 transition-colors"
               >
                 {resendTimer > 0 ? `Resend Code (${resendTimer}s)` : "Resend Code"}
               </button>
@@ -363,15 +369,15 @@ export default function SignupPage() {
         {step === "ACCOUNT_DETAILS" && (
           <form onSubmit={handleRequestEmailOTP} className="space-y-6">
             <div className="text-left">
-              <h2 className="font-display text-2xl font-bold text-white mb-2">Create your account</h2>
-              <p className="text-xs text-slate-400">Your public NumID will be <span className="text-indigo-400 font-mono font-bold">{phone.replace("+", "")}@numid.us</span>. Enter details to finish signup.</p>
+              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Create your account</h2>
+              <p className="text-xs text-slate-505 dark:text-slate-400">Your public NumID will be <span className="text-indigo-650 dark:text-indigo-400 font-mono font-bold">{phone.replace("+", "")}@numid.us</span>. Enter details to finish signup.</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-wide">Destination Email</label>
+                <label className="text-xs font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Destination Email</label>
                 <div className="relative flex items-center">
-                  <div className="absolute left-4 text-slate-500 pointer-events-none">
+                  <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
                     <Mail className="w-5 h-5" />
                   </div>
                   <input
@@ -379,7 +385,7 @@ export default function SignupPage() {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
+                    className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
                     required
                   />
                 </div>
@@ -389,9 +395,9 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-wide">Password</label>
+                <label className="text-xs font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Password</label>
                 <div className="relative flex items-center">
-                  <div className="absolute left-4 text-slate-500 pointer-events-none">
+                  <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
                     <Lock className="w-5 h-5" />
                   </div>
                   <input
@@ -399,7 +405,7 @@ export default function SignupPage() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
+                    className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
                     required
                   />
                 </div>
@@ -426,20 +432,20 @@ export default function SignupPage() {
         {/* STEP 4: Email OTP verification code input */}
         {step === "EMAIL_OTP_INPUT" && (
           <form onSubmit={handleVerifyEmailAndSignup} className="space-y-6">
-            <div className="flex items-center space-x-2 text-slate-500 hover:text-white transition-colors cursor-pointer text-xs font-semibold mb-2" onClick={() => setStep("ACCOUNT_DETAILS")}>
+            <div className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer text-xs font-semibold mb-2" onClick={() => setStep("ACCOUNT_DETAILS")}>
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Change email / password</span>
             </div>
             
             <div className="text-left">
-              <h2 className="font-display text-2xl font-bold text-white mb-2">Verify your email</h2>
-              <p className="text-xs text-slate-400">We've sent a 6-digit verification code to <span className="text-white font-mono">{email}</span>.</p>
+              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Verify your email</h2>
+              <p className="text-xs text-slate-505 dark:text-slate-400">We've sent a 6-digit verification code to <span className="text-slate-900 dark:text-white font-mono">{email}</span>.</p>
             </div>
 
             <div className="relative">
-              <label className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-wide">Enter Code</label>
+              <label className="text-xs font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Enter Code</label>
               <div className="relative flex items-center">
-                <div className="absolute left-4 text-slate-500 pointer-events-none">
+                <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
                   <Lock className="w-5 h-5" />
                 </div>
                 <input
@@ -448,7 +454,7 @@ export default function SignupPage() {
                   maxLength={6}
                   value={emailOtp}
                   onChange={(e) => setEmailOtp(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono tracking-widest text-center text-lg"
+                  className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono tracking-widest text-center text-lg font-bold"
                   required
                 />
               </div>
@@ -469,20 +475,20 @@ export default function SignupPage() {
               )}
             </button>
 
-            <div className="flex justify-between items-center text-xs text-slate-400 pt-2">
+            <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400 pt-2">
               <span>Didn't receive code?</span>
               <button
                 type="button"
                 onClick={handleResendEmailOTP}
                 disabled={resendTimer > 0 || isPending}
-                className="text-indigo-400 hover:text-indigo-300 font-semibold disabled:text-slate-600 transition-colors"
+                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold disabled:text-slate-400 dark:disabled:text-slate-600 transition-colors"
               >
                 {resendTimer > 0 ? `Resend Code (${resendTimer}s)` : "Resend Code"}
               </button>
             </div>
             
-            <div className="bg-slate-900/30 border border-white/5 rounded-xl p-3.5 text-[11px] text-slate-400">
-              <span className="font-bold text-indigo-400">💡 Local Sandbox Tip:</span> If Twilio keys are not set, check the server log for the code. Alternatively, use standard test code <code className="font-mono text-white bg-slate-800 px-1 py-0.5 rounded">123456</code> to verify instantly.
+            <div className="bg-slate-105 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 rounded-xl p-3.5 text-[11px] text-slate-655 dark:text-slate-400 transition-colors">
+              <span className="font-bold text-indigo-600 dark:text-indigo-400">💡 Local Sandbox Tip:</span> If Twilio keys are not set, check the server log for the code. Alternatively, use standard test code <code className="font-mono text-slate-800 dark:text-white bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">123456</code> to verify instantly.
             </div>
           </form>
         )}
@@ -490,20 +496,20 @@ export default function SignupPage() {
         {/* STEP 5: Email pending / fallback error instruction screen */}
         {step === "EMAIL_PENDING" && (
           <div className="space-y-6 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 mx-auto flex items-center justify-center text-indigo-400 animate-bounce">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 mx-auto flex items-center justify-center text-indigo-600 dark:text-indigo-400 animate-bounce">
               <Mail className="w-8 h-8" />
             </div>
 
             <div>
-              <h2 className="font-display text-2xl font-bold text-white mb-2">Account Created!</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Account Created!</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 We've verified your details, but we couldn't automatically log you in. Please sign in to access your dashboard.
               </p>
             </div>
 
             <button
               onClick={() => { window.location.href = "/dashboard"; }}
-              className="w-full bg-slate-900 hover:bg-slate-800 border border-white/10 text-white font-semibold py-3 rounded-xl transition-all text-sm"
+              className="w-full bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white font-semibold py-3 rounded-xl transition-all text-sm shadow"
             >
               Access Dashboard / Sign In
             </button>
@@ -513,8 +519,8 @@ export default function SignupPage() {
       </div>
       
       {/* Footer support */}
-      <div className="mt-8 text-xs text-slate-500">
-        Already have an account? <Link href="/dashboard" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">Sign In</Link>
+      <div className="mt-8 text-xs text-slate-500 text-center">
+        Already have an account? <Link href="/dashboard" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold transition-colors">Sign In</Link>
       </div>
 
     </div>
