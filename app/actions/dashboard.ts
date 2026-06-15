@@ -53,7 +53,11 @@ export async function getDashboardData() {
 
         // If verified, we can create the zone routing rule immediately
         if (statusCheck.verified) {
-          routeId = await createRoute(profile.phone_number, profile.destination_email);
+          if (routeId) {
+            await updateRoute(routeId, profile.phone_number, profile.destination_email);
+          } else {
+            routeId = await createRoute(profile.phone_number, profile.destination_email);
+          }
           finalStatus = "active";
 
           // Save to DB
@@ -388,11 +392,10 @@ export async function testCloudflareConnectionAction() {
     const zoneId     = process.env.CLOUDFLARE_ZONE_ID     || "";
     const isMockMode = !apiToken || !accountId || !zoneId || process.env.NEXT_PUBLIC_MOCK_APIS === "true";
 
-    // Surface env var presence for diagnostics
-    const envStatus = {
-      CLOUDFLARE_API_TOKEN:  apiToken  ? `set (${apiToken.substring(0, 6)}...)` : "❌ MISSING",
-      CLOUDFLARE_ACCOUNT_ID: accountId ? `set (${accountId.substring(0, 6)}...)` : "❌ MISSING",
-      CLOUDFLARE_ZONE_ID:    zoneId    ? `set (${zoneId.substring(0, 6)}...)`    : "❌ MISSING",
+    const envStatus: Record<string, string> = {
+      CLOUDFLARE_API_TOKEN:  apiToken  ? `set (${apiToken.substring(0, 8)}...)` : "❌ MISSING",
+      CLOUDFLARE_ACCOUNT_ID: accountId ? `set (${accountId.substring(0, 8)}...)` : "❌ MISSING",
+      CLOUDFLARE_ZONE_ID:    zoneId    ? `set (${zoneId.substring(0, 8)}...)`    : "❌ MISSING",
       mode: isMockMode ? "MOCK" : "LIVE",
     };
 
@@ -404,15 +407,33 @@ export async function testCloudflareConnectionAction() {
       };
     }
 
-    // 1. Test account-level auth: list destination addresses
+    // Step 1: Verify the token itself is valid (most direct auth check)
+    const tokenResp = await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify", {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${apiToken}` },
+    });
+    const tokenData = await tokenResp.json();
+    if (!tokenResp.ok || tokenData.result?.status !== "active") {
+      const cfError = tokenData.errors?.[0];
+      return {
+        success: false,
+        message: `❌ API Token invalid — ${cfError?.message || tokenData.result?.status || "Unknown error"} (HTTP ${tokenResp.status})`,
+        detail: {
+          ...envStatus,
+          token_status: tokenData.result?.status ?? "unknown",
+          cf_error_code: String(cfError?.code ?? ""),
+          cf_error_msg: cfError?.message ?? "",
+          fix: "Go to Cloudflare Dashboard → My Profile → API Tokens → Create Token. Use the 'Edit zone DNS' template then add: Account > Email Routing Addresses > Edit, Zone > Email Routing Rules > Edit.",
+        },
+      };
+    }
+
+    // Step 2: Test account-level — list destination addresses
     const addrResp = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${accountId}/email/routing/addresses?per_page=5`,
       {
         method: "GET",
-        headers: {
-          "Authorization": `Bearer ${apiToken}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Authorization": `Bearer ${apiToken}`, "Content-Type": "application/json" },
       }
     );
     const addrData = await addrResp.json();
@@ -420,20 +441,25 @@ export async function testCloudflareConnectionAction() {
       const cfError = addrData.errors?.[0];
       return {
         success: false,
-        message: `Cloudflare account API failed — ${cfError?.message || addrResp.statusText} (code: ${cfError?.code ?? addrResp.status})`,
-        detail: envStatus,
+        message: `❌ Account API failed — ${cfError?.message || addrResp.statusText} (code: ${cfError?.code ?? addrResp.status})`,
+        detail: {
+          ...envStatus,
+          cf_error_code: String(cfError?.code ?? ""),
+          fix: cfError?.code === 9109
+            ? "Token is valid but lacks 'Account > Email Routing Addresses > Edit' permission. Recreate token with this scope."
+            : cfError?.code === 7003 || cfError?.code === 7000
+            ? "CLOUDFLARE_ACCOUNT_ID is wrong. Find it in Cloudflare Dashboard → right sidebar under 'Account ID'."
+            : "Check CLOUDFLARE_ACCOUNT_ID in .env.local",
+        },
       };
     }
 
-    // 2. Test zone-level auth: list routing rules
+    // Step 3: Test zone-level — list routing rules
     const zoneResp = await fetch(
       `https://api.cloudflare.com/client/v4/zones/${zoneId}/email/routing/rules?per_page=5`,
       {
         method: "GET",
-        headers: {
-          "Authorization": `Bearer ${apiToken}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Authorization": `Bearer ${apiToken}`, "Content-Type": "application/json" },
       }
     );
     const zoneData = await zoneResp.json();
@@ -441,18 +467,31 @@ export async function testCloudflareConnectionAction() {
       const cfError = zoneData.errors?.[0];
       return {
         success: false,
-        message: `Cloudflare zone API failed — ${cfError?.message || zoneResp.statusText} (code: ${cfError?.code ?? zoneResp.status})`,
-        detail: envStatus,
+        message: `❌ Zone API failed — ${cfError?.message || zoneResp.statusText} (code: ${cfError?.code ?? zoneResp.status})`,
+        detail: {
+          ...envStatus,
+          cf_error_code: String(cfError?.code ?? ""),
+          fix: cfError?.code === 9109
+            ? "Token lacks 'Zone > Email Routing Rules > Edit' permission."
+            : cfError?.code === 7003
+            ? "CLOUDFLARE_ZONE_ID is wrong. Find it in Cloudflare Dashboard → your domain → Overview → Zone ID in right sidebar."
+            : "Check CLOUDFLARE_ZONE_ID in .env.local",
+        },
       };
     }
 
     return {
       success: true,
-      message: `✅ Cloudflare connection OK — ${addrData.result?.length ?? 0} destination address(es) registered, ${zoneData.result?.length ?? 0} routing rule(s) active.`,
-      detail: envStatus,
+      message: `✅ All checks passed — ${addrData.result?.length ?? 0} destination address(es), ${zoneData.result?.length ?? 0} routing rule(s).`,
+      detail: {
+        ...envStatus,
+        token_status: tokenData.result?.status ?? "active",
+        destinations: String(addrData.result?.length ?? 0),
+        routing_rules: String(zoneData.result?.length ?? 0),
+      },
     };
   } catch (error: any) {
-    return { success: false, message: error.message || "Unexpected error testing Cloudflare connection" };
+    return { success: false, message: `Unexpected error: ${error.message}` };
   }
 }
 

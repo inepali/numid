@@ -154,6 +154,61 @@ export async function mockVerifyDestinationEmail(email: string): Promise<boolean
 }
 
 /**
+ * Helper to find an existing routing rule ID by matcher value (e.g. 5154146054@numid.us)
+ */
+async function findExistingRuleId(numidAddress: string): Promise<string | null> {
+  if (IS_MOCK_MODE) {
+    const rules = getMockRules();
+    const found = rules.find(r => `${r.phone.replace(/\+/g, "")}@numid.us`.toLowerCase() === numidAddress.toLowerCase());
+    return found ? found.id : null;
+  }
+
+  try {
+    let page = 1;
+    let hasMore = true;
+    while (hasMore) {
+      const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/email/routing/rules?page=${page}&per_page=100`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`[Cloudflare Routing ERROR] Failed to list rules on page ${page}`);
+        return null;
+      }
+
+      const data = await response.json();
+      const rules = data.result || [];
+      
+      const found = rules.find((rule: any) => 
+        rule.matchers?.some((m: any) => 
+          m.field === "to" && m.value?.toLowerCase() === numidAddress.toLowerCase()
+        )
+      );
+
+      if (found) {
+        return found.id;
+      }
+
+      const totalCount = data.result_info?.total_count || 0;
+      const count = page * 100;
+      if (count >= totalCount || rules.length < 100) {
+        hasMore = false;
+      } else {
+        page++;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error("[Cloudflare Routing ERROR] findExistingRuleId failed:", err);
+    return null;
+  }
+}
+
+/**
  * Create Email Routing rule (e.g. 5154146054@numid.us -> targetEmail)
  */
 export async function createRoute(phone: string, destinationEmail: string): Promise<string> {
@@ -206,6 +261,25 @@ export async function createRoute(phone: string, destinationEmail: string): Prom
 
     const data = await response.json();
     if (!response.ok) {
+      const isDuplicate = data.errors?.some((e: any) => 
+        e.code === 1009 || 
+        e.message?.toLowerCase().includes("duplicated zone rule") || 
+        e.message?.toLowerCase().includes("already exists") ||
+        e.message?.toLowerCase().includes("duplicate")
+      );
+
+      if (isDuplicate) {
+        console.log(`[Cloudflare Routing] Duplicate rule detected for ${numidAddress}. Searching for existing rule ID...`);
+        const existingRuleId = await findExistingRuleId(numidAddress);
+        if (existingRuleId) {
+          console.log(`[Cloudflare Routing] Found existing rule ID: ${existingRuleId}. Syncing/updating it...`);
+          await updateRoute(existingRuleId, phone, destinationEmail);
+          return existingRuleId;
+        } else {
+          console.warn(`[Cloudflare Routing] Cloudflare reported duplicate rule, but we couldn't find a matching rule for ${numidAddress} in the zone.`);
+        }
+      }
+
       throw new Error(data.errors?.[0]?.message || "Failed to create Cloudflare email routing rule");
     }
 
