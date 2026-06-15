@@ -560,7 +560,7 @@ export default function DashboardPage() {
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">My NumID</span>
-                  <h2 className="font-display text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white font-mono mt-1 select-all hover:text-indigo-650 dark:hover:text-indigo-300 transition-colors">
+                  <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white font-mono mt-1 select-all hover:text-indigo-650 dark:hover:text-indigo-300 transition-colors">
                     {profile?.numid_address?.replace("+", "")}
                   </h2>
                 </div>
@@ -594,7 +594,7 @@ export default function DashboardPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Destination Email</p>
                     <div className="flex items-center space-x-2">
-                      <p className="text-xs text-slate-900 dark:text-white font-medium truncate max-w-[150px]">{profile?.destination_email}</p>
+                      <p className="text-xs text-slate-900 dark:text-white font-medium truncate max-w-[110px] xs:max-w-[165px] sm:max-w-none">{profile?.destination_email}</p>
                       <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${profile?.email_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
                         {profile?.email_verified ? "Verified" : "Pending"}
                       </span>
@@ -715,15 +715,15 @@ export default function DashboardPage() {
           </div>
 
           {/* Tab buttons */}
-          <div className="flex flex-wrap border-b border-slate-200 dark:border-white/5 gap-1">
+          <div className="flex overflow-x-auto scrollbar-none border-b border-slate-200 dark:border-white/5 gap-1 -mx-5 sm:mx-0 px-5 sm:px-0">
             {(Object.keys(PROFILE_CATEGORIES) as ProfileCategoryKey[]).map((tabKey) => (
               <button
                 key={tabKey}
                 onClick={() => setActiveProfileTab(tabKey)}
-                className={`px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-all border-b-2 -mb-px ${
+                className={`px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-all border-b-2 -mb-px whitespace-nowrap shrink-0 ${
                   activeProfileTab === tabKey
                     ? "border-indigo-500 text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900/50"
-                    : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                    : "border-transparent text-slate-505 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
                 }`}
               >
                 {PROFILE_CATEGORIES[tabKey].title}
@@ -795,7 +795,7 @@ export default function DashboardPage() {
                         <label className="text-[10px] text-slate-505 dark:text-slate-550 font-bold uppercase block mb-1">
                           {service.name}
                         </label>
-                        <div className="flex items-center">
+                        <div className="flex flex-wrap items-center gap-y-1">
                           {service.prefix && (
                             <span className="text-slate-550 select-none pr-1.5 font-mono text-[11px] max-w-[120px] sm:max-w-none truncate shrink-0">
                               {service.prefix.replace("https://", "")}
@@ -809,7 +809,7 @@ export default function DashboardPage() {
                               const newVal = e.target.value;
                               setSocialLinks((prev) => ({ ...prev, [key]: newVal }));
                             }}
-                            className="bg-transparent border-none p-0 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-0 flex-1 min-w-0 font-mono text-xs"
+                            className="bg-transparent border-none p-0 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-0 flex-1 min-w-[120px] font-mono text-xs"
                           />
                         </div>
                       </div>
