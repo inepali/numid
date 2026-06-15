@@ -13,6 +13,7 @@ import {
   mockVerifyDestinationEmailAction,
   testCloudflareConnectionAction,
   provisionCloudflareRouteAction,
+  updateSocialProfilesAction,
 } from "@/app/actions/dashboard";
 import { 
   Mail, 
@@ -34,12 +35,76 @@ import {
   Smartphone,
   Zap,
   Radio,
+  Plus,
+  Globe,
+  Link2,
+  ExternalLink,
+  Share2,
 } from "lucide-react";
 import Link from "next/link";
 
+// Available services schema
+type ProfileCategoryKey = "socials" | "messaging" | "professional" | "business";
+
+interface ServiceConfig {
+  name: string;
+  prefix: string;
+  placeholder: string;
+}
+
+const PROFILE_CATEGORIES: Record<ProfileCategoryKey, { title: string; services: Record<string, ServiceConfig> }> = {
+  socials: {
+    title: "Core Socials",
+    services: {
+      facebook: { name: "Facebook", prefix: "https://facebook.com/", placeholder: "username" },
+      instagram: { name: "Instagram", prefix: "https://instagram.com/", placeholder: "username" },
+      linkedin: { name: "LinkedIn", prefix: "https://linkedin.com/in/", placeholder: "username" },
+      x: { name: "X (Twitter)", prefix: "https://x.com/", placeholder: "username" },
+      tiktok: { name: "TikTok", prefix: "https://tiktok.com/@", placeholder: "username" },
+      youtube: { name: "YouTube", prefix: "https://youtube.com/@", placeholder: "channel" },
+      threads: { name: "Threads", prefix: "https://threads.net/@", placeholder: "username" },
+    }
+  },
+  messaging: {
+    title: "Messaging Platforms",
+    services: {
+      whatsapp: { name: "WhatsApp", prefix: "https://wa.me/", placeholder: "15154146054 (with country code)" },
+      telegram: { name: "Telegram", prefix: "https://t.me/", placeholder: "username" },
+      signal: { name: "Signal", prefix: "https://signal.me/#p/", placeholder: "username or phone" },
+      discord: { name: "Discord", prefix: "", placeholder: "username" },
+      messenger: { name: "Messenger", prefix: "https://m.me/", placeholder: "username" },
+    }
+  },
+  professional: {
+    title: "Professional & Creator",
+    services: {
+      github: { name: "GitHub", prefix: "https://github.com/", placeholder: "username" },
+      gitlab: { name: "GitLab", prefix: "https://gitlab.com/", placeholder: "username" },
+      behance: { name: "Behance", prefix: "https://behance.net/", placeholder: "username" },
+      dribbble: { name: "Dribbble", prefix: "https://dribbble.com/", placeholder: "username" },
+      medium: { name: "Medium", prefix: "https://medium.com/@", placeholder: "username" },
+      substack: { name: "Substack", prefix: "https://", placeholder: "username.substack.com" },
+    }
+  },
+  business: {
+    title: "Business & Contact",
+    services: {
+      personal_website: { name: "Personal Website", prefix: "", placeholder: "https://yourwebsite.com" },
+      company_website: { name: "Company Website", prefix: "", placeholder: "https://company.com" },
+      contact_form: { name: "Contact Form", prefix: "", placeholder: "https://yourwebsite.com/contact" },
+      phone: { name: "Phone Call Link", prefix: "tel:", placeholder: "+15154146054" },
+      sms: { name: "SMS Link", prefix: "sms:", placeholder: "+15154146054" },
+      email: { name: "Email Link", prefix: "mailto:", placeholder: "your@email.com" },
+      calendly: { name: "Calendly Link", prefix: "https://calendly.com/", placeholder: "username" },
+      google_business: { name: "Google Business Profile", prefix: "", placeholder: "https://g.page/r/your-id" },
+      online_store: { name: "Online Store Link", prefix: "", placeholder: "https://shop.yourbrand.com" },
+    }
+  }
+};
+
 // Instantiate client-side Supabase client
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mock-supabase.supabase.co";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-anon-key";
 const supabase = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function DashboardPage() {
@@ -49,6 +114,10 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isPending, startTransition] = useTransition();
+
+  // Social Profile States
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
+  const [activeProfileTab, setActiveProfileTab] = useState<ProfileCategoryKey>("socials");
 
   // Dialog & Form States
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -111,6 +180,7 @@ export default function DashboardPage() {
     const res = await getDashboardData();
     if (res.success) {
       setProfile(res.profile);
+      setSocialLinks(res.profile?.social_profiles || {});
       setAuditLogs(res.auditLogs || []);
       if (res.message) {
         setSuccessMsg(res.message);
@@ -220,6 +290,21 @@ export default function DashboardPage() {
       const res = await mockVerifyDestinationEmailAction(profile.destination_email);
       if (res.success) {
         setSuccessMsg(res.message + " Now click 'Check Cloudflare Status' to activate.");
+      } else {
+        setErrorMsg(res.message);
+      }
+    });
+  };
+
+  const handleSaveSocialLinks = () => {
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    startTransition(async () => {
+      const res = await updateSocialProfilesAction(socialLinks);
+      if (res.success) {
+        setSuccessMsg(res.message);
+        await loadData();
       } else {
         setErrorMsg(res.message);
       }
@@ -545,6 +630,157 @@ export default function DashboardPage() {
             </div>
           </div>
 
+        </div>
+
+        {/* Public Identity Profile Card */}
+        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-950 border border-white/5 shadow-xl space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
+            <div>
+              <div className="flex items-center space-x-2 text-indigo-400">
+                <Share2 className="w-5 h-5" />
+                <h3 className="font-display font-bold text-white text-lg">Public Identity Profile</h3>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Configure your social networks and contact links. Your profile is live at{" "}
+                <Link
+                  href={`/${profile?.phone_number?.replace("+", "")}`}
+                  target="_blank"
+                  className="text-indigo-400 hover:text-indigo-300 font-semibold underline inline-flex items-center gap-1"
+                >
+                  <span>numid.dev/{profile?.phone_number?.replace("+", "")}</span>
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+              </p>
+            </div>
+            
+            <button
+              onClick={handleSaveSocialLinks}
+              disabled={isPending}
+              className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
+            >
+              {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>Save Profile Links</span>
+            </button>
+          </div>
+
+          {/* Tab buttons */}
+          <div className="flex flex-wrap border-b border-white/5 gap-1">
+            {(Object.keys(PROFILE_CATEGORIES) as ProfileCategoryKey[]).map((tabKey) => (
+              <button
+                key={tabKey}
+                onClick={() => setActiveProfileTab(tabKey)}
+                className={`px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-all border-b-2 -mb-px ${
+                  activeProfileTab === tabKey
+                    ? "border-indigo-500 text-white bg-slate-900/50"
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {PROFILE_CATEGORIES[tabKey].title}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-slate-400 font-semibold">
+                Active {PROFILE_CATEGORIES[activeProfileTab].title} links:
+              </span>
+              
+              {/* Dropdown to add new key */}
+              {Object.keys(PROFILE_CATEGORIES[activeProfileTab].services).some(
+                (key) => socialLinks[key] === undefined
+              ) ? (
+                <div className="relative inline-block text-left">
+                  <select
+                    onChange={(e) => {
+                      const selectedKey = e.target.value;
+                      if (selectedKey) {
+                        setSocialLinks((prev) => ({ ...prev, [selectedKey]: "" }));
+                        e.target.value = ""; // reset dropdown selection
+                      }
+                    }}
+                    defaultValue=""
+                    className="bg-slate-900 border border-white/10 text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500/40 cursor-pointer"
+                  >
+                    <option value="" disabled>+ Add Link / Profile...</option>
+                    {Object.entries(PROFILE_CATEGORIES[activeProfileTab].services)
+                      .filter(([key]) => socialLinks[key] === undefined)
+                      .map(([key, service]) => (
+                        <option key={key} value={key}>
+                          {service.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              ) : (
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wide">
+                  All active links added
+                </span>
+              )}
+            </div>
+
+            {/* Configured fields list */}
+            {Object.keys(PROFILE_CATEGORIES[activeProfileTab].services).filter(
+              (key) => socialLinks[key] !== undefined
+            ).length === 0 ? (
+              <div className="text-center py-8 rounded-2xl bg-slate-900/10 border border-dashed border-white/5 text-xs text-slate-500">
+                No links added in this category yet. Select a service above to add it.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {Object.entries(PROFILE_CATEGORIES[activeProfileTab].services)
+                  .filter(([key]) => socialLinks[key] !== undefined)
+                  .map(([key, service]) => (
+                    <div
+                      key={key}
+                      className="flex items-center gap-3 bg-slate-900/40 p-3.5 rounded-xl border border-white/5 text-xs focus-within:border-indigo-500/30 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 font-bold shrink-0">
+                        {service.name.substring(0, 2)}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">
+                          {service.name}
+                        </label>
+                        <div className="flex items-center">
+                          {service.prefix && (
+                            <span className="text-slate-500 select-none pr-1.5 font-mono text-[11px] max-w-[120px] sm:max-w-none truncate shrink-0">
+                              {service.prefix.replace("https://", "")}
+                            </span>
+                          )}
+                          <input
+                            type="text"
+                            placeholder={service.placeholder}
+                            value={socialLinks[key]}
+                            onChange={(e) => {
+                              const newVal = e.target.value;
+                              setSocialLinks((prev) => ({ ...prev, [key]: newVal }));
+                            }}
+                            className="bg-transparent border-none p-0 text-white placeholder-slate-600 focus:outline-none focus:ring-0 flex-1 min-w-0 font-mono text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setSocialLinks((prev) => {
+                            const updated = { ...prev };
+                            delete updated[key];
+                            return updated;
+                          });
+                        }}
+                        className="p-2 text-slate-500 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-all shrink-0"
+                        title="Remove Link"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 2. Sandbox Testing Console (Visible if in Mock Mode) */}

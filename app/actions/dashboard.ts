@@ -555,3 +555,55 @@ export async function provisionCloudflareRouteAction() {
     return { success: false, message: error.message || "Cloudflare provisioning failed" };
   }
 }
+
+/**
+ * Action: Update social profiles for the authenticated user
+ */
+export async function updateSocialProfilesAction(profiles: Record<string, string>) {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    // Sanitize values and format profile data
+    const sanitizedProfiles: Record<string, string> = {};
+    for (const [key, val] of Object.entries(profiles)) {
+      if (val && val.trim().length > 0) {
+        sanitizedProfiles[key] = val.trim();
+      }
+    }
+
+    const adminClient = createAdminClient();
+    const { error: dbError } = await adminClient
+      .from("users")
+      .update({
+        social_profiles: sanitizedProfiles,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+
+    if (dbError) {
+      if (dbError.message?.includes("column \"social_profiles\" of relation \"users\" does not exist") || dbError.code === "42703") {
+        throw new Error("Database update failed: Column 'social_profiles' is missing. Please run the SQL migration in your Supabase SQL Editor first!");
+      }
+      throw dbError;
+    }
+
+    // Log audit event
+    await adminClient.from("audit_logs").insert({
+      user_id: user.id,
+      action: "update_social_profiles",
+      metadata: { count: Object.keys(sanitizedProfiles).length },
+    });
+
+    return {
+      success: true,
+      message: "Public profile social links updated successfully!",
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to update social profiles" };
+  }
+}
