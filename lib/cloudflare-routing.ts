@@ -322,8 +322,18 @@ export async function updateRoute(routeId: string, phone: string, destinationEma
       setMockRules(rules);
       console.log(`[Cloudflare Routing MOCK] Updated route ID: ${routeId} to forward to ${destinationEmail}`);
       return;
+    } else {
+      rules.push({
+        id: routeId,
+        name: `NumID Forwarding: ${cleanPhone}`,
+        phone: cleanPhone,
+        destinationEmail,
+        enabled: true,
+      });
+      setMockRules(rules);
+      console.log(`[Cloudflare Routing MOCK] Re-created route ID: ${routeId} in mock store to forward to ${destinationEmail}`);
+      return;
     }
-    throw new Error(`Cloudflare route ID ${routeId} not found in mock store`);
   }
 
   try {
