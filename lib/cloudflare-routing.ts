@@ -68,6 +68,13 @@ export async function addDestinationAddress(email: string): Promise<{ success: b
   }
 
   try {
+    // Check if the address already exists on the Cloudflare account first
+    const statusCheck = await getDestinationStatus(email);
+    if (statusCheck.success) {
+      console.log(`[Cloudflare Routing] Destination address ${email} already exists on Cloudflare. Verified: ${statusCheck.verified}`);
+      return statusCheck;
+    }
+
     const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/email/routing/addresses`, {
       method: "POST",
       headers: {

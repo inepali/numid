@@ -61,7 +61,16 @@ export async function getDashboardData() {
         // If verified, we can create the zone routing rule immediately
         if (statusCheck.verified) {
           if (routeId) {
-            await updateRoute(routeId, profile.phone_number, profile.destination_email);
+            try {
+              await updateRoute(routeId, profile.phone_number, profile.destination_email);
+            } catch (err: any) {
+              if (err.message?.includes("ID not found") || err.message?.includes("not found")) {
+                console.log(`[Cloudflare Routing] Route ID ${routeId} not found in Cloudflare. Creating new rule...`);
+                routeId = await createRoute(profile.phone_number, profile.destination_email);
+              } else {
+                throw err;
+              }
+            }
           } else {
             routeId = await createRoute(profile.phone_number, profile.destination_email);
           }
@@ -264,7 +273,16 @@ export async function checkCloudflareStatusAction() {
 
     if (routeId) {
       // Rule exists, update it
-      await updateRoute(routeId, profile.phone_number, profile.destination_email);
+      try {
+        await updateRoute(routeId, profile.phone_number, profile.destination_email);
+      } catch (err: any) {
+        if (err.message?.includes("ID not found") || err.message?.includes("not found")) {
+          console.log(`[Cloudflare Routing] Route ID ${routeId} not found in Cloudflare. Creating new rule...`);
+          routeId = await createRoute(profile.phone_number, profile.destination_email);
+        } else {
+          throw err;
+        }
+      }
     } else {
       // Rule doesn't exist, create it
       routeId = await createRoute(profile.phone_number, profile.destination_email);
@@ -544,7 +562,16 @@ export async function provisionCloudflareRouteAction() {
     // Step 3: Create or update routing rule
     let routeId = profile.cloudflare_route_id;
     if (routeId) {
-      await updateRoute(routeId, profile.phone_number, profile.destination_email);
+      try {
+        await updateRoute(routeId, profile.phone_number, profile.destination_email);
+      } catch (err: any) {
+        if (err.message?.includes("ID not found") || err.message?.includes("not found")) {
+          console.log(`[Cloudflare Routing] Route ID ${routeId} not found in Cloudflare. Creating new rule...`);
+          routeId = await createRoute(profile.phone_number, profile.destination_email);
+        } else {
+          throw err;
+        }
+      }
     } else {
       routeId = await createRoute(profile.phone_number, profile.destination_email);
     }
