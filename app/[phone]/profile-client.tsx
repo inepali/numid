@@ -86,16 +86,25 @@ function getAbsoluteUrl(serviceKey: string, value: string, prefix: string) {
 
 export default function PublicProfileClient({ profile }: PublicProfileClientProps) {
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("all");
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Check which tabs have active links
+  const availableGroups = CATEGORY_GROUPS.filter(group => 
+    group.keys.some(k => profile.social_profiles?.[k] !== undefined && profile.social_profiles[k].trim() !== "")
+  );
+
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    return availableGroups.find(g => g.key === "socials")
+      ? "socials"
+      : (availableGroups[0]?.key || "socials");
+  });
 
   const handleCopy = () => {
     navigator.clipboard.writeText(profile.phone_number);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const [showQRModal, setShowQRModal] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
 
   const profileUrl = typeof window !== "undefined"
     ? window.location.origin + "/" + profile.phone_number.replace("+", "")
@@ -124,15 +133,7 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
     }
   };
 
-  // Check which tabs have active links
-  const availableGroups = CATEGORY_GROUPS.filter(group => 
-    group.keys.some(k => profile.social_profiles?.[k] !== undefined && profile.social_profiles[k].trim() !== "")
-  );
-
-  const tabs = [
-    { key: "all", title: "All Links" },
-    ...availableGroups.map(g => ({ key: g.key, title: g.title.split(" ")[0] })) // Shorten titles for tab bar
-  ];
+  const tabs = availableGroups.map(g => ({ key: g.key, title: g.title.split(" ")[0] })); // Shorten titles for tab bar
 
   return (
     <div className="relative min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center px-4 py-12 overflow-hidden font-sans transition-colors duration-300">
@@ -209,7 +210,7 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
             </div>
           ) : (
             CATEGORY_GROUPS
-              .filter(group => activeTab === "all" || activeTab === group.key)
+              .filter(group => activeTab === group.key)
               .map(group => {
                 const activeInGroup = group.keys.filter(k => 
                   profile.social_profiles?.[k] !== undefined && profile.social_profiles[k].trim() !== ""
@@ -219,11 +220,6 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
 
                 return (
                   <div key={group.key} className="space-y-2.5 text-left">
-                    {activeTab === "all" && (
-                      <h4 className="text-[10px] uppercase font-bold text-slate-500 tracking-wider pl-1 mt-4 first:mt-0">
-                        {group.title}
-                      </h4>
-                    )}
                     
                     <div className="space-y-2">
                       {activeInGroup.map((key) => {
