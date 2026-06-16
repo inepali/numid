@@ -33,6 +33,7 @@ import {
   History,
   Sparkles,
   ArrowLeft,
+  ArrowRight,
   Smartphone,
   Zap,
   Radio,
