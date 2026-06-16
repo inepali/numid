@@ -11,6 +11,7 @@ import {
   Share2,
   QrCode,
   Download,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/ThemeToggle";
@@ -20,6 +21,8 @@ interface PublicProfileClientProps {
     phone_number: string;
     numid_address: string;
     social_profiles: Record<string, string>;
+    avatar_url?: string;
+    avatar_updated_at?: string;
   };
 }
 
@@ -161,6 +164,21 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
         <div className="inline-flex items-center space-x-1.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wide mb-6">
           <ShieldCheck className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>Verified Identity</span>
+        </div>
+
+        {/* Avatar Display */}
+        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-center overflow-hidden mb-6 shadow-inner shrink-0">
+          {profile.avatar_url ? (
+            <img 
+              src={`${profile.avatar_url}?t=${profile.avatar_updated_at ? new Date(profile.avatar_updated_at).getTime() : Date.now()}`}
+              alt="Avatar"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-display font-bold text-2xl sm:text-3xl">
+              {profile.numid_address.substring(0, 1).toUpperCase()}
+            </div>
+          )}
         </div>
 
         {/* User Identity Info */}

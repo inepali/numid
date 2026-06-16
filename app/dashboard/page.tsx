@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState, useEffect, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { 
@@ -15,6 +15,7 @@ import {
   provisionCloudflareRouteAction,
   updateSocialProfilesAction,
   saveDestinationEmailAction,
+  uploadAvatarAction,
 } from "@/app/actions/dashboard";
 import { 
   Mail, 
@@ -45,6 +46,7 @@ import {
   QrCode,
   Copy,
   Check,
+  Camera,
 } from "lucide-react";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/ThemeToggle";
@@ -134,6 +136,9 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isPending, startTransition] = useTransition();
+
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Social Profile States
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
@@ -286,6 +291,55 @@ export default function DashboardPage() {
     setIsAuthenticated(false);
     setProfile(null);
     router.push("/");
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Client-side validation: JPEG/JPG only
+    if (file.type !== "image/jpeg" && file.type !== "image/jpg") {
+      setErrorMsg("Only JPEG files are allowed.");
+      return;
+    }
+
+    // Size limit: 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      setErrorMsg("Image size must be less than 2MB.");
+      return;
+    }
+
+    setAvatarLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const res = await uploadAvatarAction(formData);
+      if (res.success) {
+        setSuccessMsg(res.message || "Avatar updated successfully!");
+        setProfile((prev: any) => ({
+          ...prev,
+          avatar_url: res.avatarUrl,
+          avatar_updated_at: res.avatarUpdatedAt,
+        }));
+      } else {
+        setErrorMsg(res.message || "Failed to upload avatar.");
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "An unexpected error occurred during upload.");
+    } finally {
+      setAvatarLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   const handleSaveDestinationEmail = (e: React.FormEvent) => {
@@ -687,7 +741,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* 1. Main Configuration Layout */}
+{/* 1. Main Configuration Layout */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
               
               {/* Forwarding Status Card (Left block) */}
@@ -695,12 +749,54 @@ export default function DashboardPage() {
                 <div className="absolute top-0 right-0 w-[200px] h-[200px] rounded-full bg-indigo-650/[0.03] dark:bg-indigo-600/5 blur-[50px] pointer-events-none" />
 
                 <div>
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-505 dark:text-slate-400 tracking-wider">My NumID</span>
-                      <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white font-mono mt-1 select-all hover:text-indigo-650 dark:hover:text-indigo-300 transition-colors">
-                        {profile?.numid_address?.replace("+", "")}
-                      </h2>
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 mb-6">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                      {/* Avatar Upload Circle */}
+                      <div 
+                        onClick={handleAvatarClick}
+                        className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-center cursor-pointer overflow-hidden group transition-all hover:border-indigo-500/50 shrink-0"
+                        title="Upload Avatar (JPEG only, max 2MB)"
+                      >
+                        {avatarLoading && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
+                            <Loader2 className="w-5 h-5 text-white animate-spin" />
+                          </div>
+                        )}
+                        
+                        {profile?.avatar_url ? (
+                          <img 
+                            src={`${profile.avatar_url}?t=${profile.avatar_updated_at ? new Date(profile.avatar_updated_at).getTime() : Date.now()}`}
+                            alt="Avatar"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-display font-bold text-xl sm:text-2xl">
+                            {profile?.numid_address ? profile.numid_address.substring(0, 1).toUpperCase() : <User className="w-8 h-8 opacity-60" />}
+                          </div>
+                        )}
+
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-semibold transition-opacity duration-200">
+                          <Camera className="w-4 h-4 mb-0.5" />
+                          <span>Change</span>
+                        </div>
+                      </div>
+
+                      {/* Hidden File Input */}
+                      <input 
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleAvatarChange}
+                        accept="image/jpeg, image/jpg"
+                        className="hidden"
+                      />
+
+                      <div className="flex flex-col justify-center">
+                        <span className="text-[10px] uppercase font-bold text-slate-505 dark:text-slate-400 tracking-wider">My NumID</span>
+                        <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white font-mono mt-1 select-all hover:text-indigo-650 dark:hover:text-indigo-300 transition-colors">
+                          {profile?.numid_address?.replace("+", "")}
+                        </h2>
+                      </div>
                     </div>
 
                     <span className={`px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wide ${(profile?.phone_verified && profile?.email_verified) || profile?.status === "active" ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30" : "bg-orange-50 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-500/30"}`}>

@@ -21,10 +21,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   const adminClient = createAdminClient();
   
-  // Search for the user profile matching the cleaned phone number in standard formats
   const { data: userProfile } = await adminClient
     .from("users")
-    .select("phone_number, numid_address, social_profiles, status, email_verified, phone_verified")
+    .select("phone_number, numid_address, social_profiles, status, email_verified, phone_verified, avatar_url, avatar_updated_at")
     .eq("status", "active")
     .or(`phone_number.eq.${cleanPhone},phone_number.eq.+${cleanPhone},numid_address.eq.${cleanPhone}@numid.us`)
     .maybeSingle();

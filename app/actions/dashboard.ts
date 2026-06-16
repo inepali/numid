@@ -699,3 +699,103 @@ export async function saveDestinationEmailAction(newEmail: string) {
   }
 }
 
+/**
+ * Action: Upload user profile avatar to Cloudflare R2
+ */
+export async function uploadAvatarAction(formData: FormData) {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    const file = formData.get("avatar") as File | null;
+    if (!file) {
+      return { success: false, message: "No file provided" };
+    }
+
+    // Validation: Only jpeg files allowed
+    if (file.type !== "image/jpeg" && file.type !== "image/jpg") {
+      return { success: false, message: "Only JPEG files are allowed." };
+    }
+
+    // Size limit: 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      return { success: false, message: "Image size must be less than 2MB." };
+    }
+
+    const adminClient = createAdminClient();
+    const { data: profile } = await adminClient
+      .from("users")
+      .select("numid_address, phone_number")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile) {
+      return { success: false, message: "Profile not found" };
+    }
+
+    // Rename image to numid email (e.g. 1234567890@numid.us.jpg)
+    const key = `${profile.numid_address}.jpg`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Validate that the file header corresponds to JPEG/JFIF
+    // JPEG magic bytes: FF D8 FF
+    if (buffer.length < 3 || buffer[0] !== 0xFF || buffer[1] !== 0xD8 || buffer[2] !== 0xFF) {
+      return { success: false, message: "Invalid image format. Only real JPEG files are allowed." };
+    }
+
+    // Store in R2 or Local Storage
+    const isMock = !process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || !process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || process.env.NEXT_PUBLIC_MOCK_APIS === "true";
+    
+    let avatarUrl = `/api/avatar/${profile.phone_number.replace("+", "")}`;
+
+    if (isMock) {
+      // Local Mock Mode: write to scratch/avatars
+      const fs = require("fs/promises");
+      const path = require("path");
+      const dirPath = path.join(process.cwd(), "scratch", "avatars");
+      await fs.mkdir(dirPath, { recursive: true });
+      await fs.writeFile(path.join(dirPath, key), buffer);
+      console.log(`[R2 MOCK] Saved avatar locally: scratch/avatars/${key}`);
+    } else {
+      // Live Mode: upload to Cloudflare R2
+      const { uploadToR2 } = await import("@/lib/r2");
+      await uploadToR2(key, buffer, "image/jpeg");
+    }
+
+    const updatedAt = new Date().toISOString();
+
+    // Update database
+    const { error: dbError } = await adminClient
+      .from("users")
+      .update({
+        avatar_url: avatarUrl,
+        avatar_updated_at: updatedAt,
+      })
+      .eq("id", user.id);
+
+    if (dbError) throw dbError;
+
+    // Audit log
+    await adminClient.from("audit_logs").insert({
+      user_id: user.id,
+      action: "upload_avatar",
+      metadata: { key, size: file.size },
+    });
+
+    return {
+      success: true,
+      avatarUrl,
+      avatarUpdatedAt: updatedAt,
+      message: "Avatar uploaded successfully!",
+    };
+  } catch (error: any) {
+    console.error("[uploadAvatarAction] Error:", error);
+    return { success: false, message: error.message || "Failed to upload avatar" };
+  }
+}
+
+
