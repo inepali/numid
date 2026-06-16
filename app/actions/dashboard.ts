@@ -72,6 +72,7 @@ export async function getDashboardData() {
             .from("users")
             .update({
               cloudflare_route_id: routeId,
+              email_verified: true,
               status: finalStatus,
             })
             .eq("id", user.id);
@@ -553,7 +554,7 @@ export async function provisionCloudflareRouteAction() {
     // Step 4: Update DB
     await adminClient
       .from("users")
-      .update({ cloudflare_route_id: routeId, status: "active" })
+      .update({ cloudflare_route_id: routeId, email_verified: true, status: "active" })
       .eq("id", user.id);
 
     await adminClient.from("audit_logs").insert({
