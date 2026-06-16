@@ -42,6 +42,11 @@ const setMockAddresses = (addresses: MockAddress[]) => {
 export async function addDestinationAddress(email: string): Promise<{ success: boolean; verified: boolean }> {
   console.log(`[Cloudflare Routing] addDestinationAddress called for: ${email}`);
 
+  if (!email || email.toLowerCase().endsWith("@numid.us") || email.toLowerCase().endsWith("@numid.dev")) {
+    console.warn(`[Cloudflare Routing] Skipping addDestinationAddress for invalid destination: ${email}`);
+    return { success: false, verified: false };
+  }
+
   if (IS_MOCK_MODE) {
     const addresses = getMockAddresses();
     const existing = addresses.find((a) => a.email.toLowerCase() === email.toLowerCase());
@@ -93,6 +98,10 @@ export async function addDestinationAddress(email: string): Promise<{ success: b
  */
 export async function getDestinationStatus(email: string): Promise<{ success: boolean; verified: boolean }> {
   console.log(`[Cloudflare Routing] getDestinationStatus called for: ${email}`);
+
+  if (!email || email.toLowerCase().endsWith("@numid.us") || email.toLowerCase().endsWith("@numid.dev")) {
+    return { success: false, verified: false };
+  }
 
   if (IS_MOCK_MODE) {
     const addresses = getMockAddresses();
@@ -213,6 +222,9 @@ async function findExistingRuleId(numidAddress: string): Promise<string | null> 
  */
 export async function createRoute(phone: string, destinationEmail: string): Promise<string> {
   console.log(`[Cloudflare Routing] createRoute called for: ${phone} -> ${destinationEmail}`);
+  if (destinationEmail.toLowerCase().endsWith("@numid.us") || destinationEmail.toLowerCase().endsWith("@numid.dev")) {
+    throw new Error("Cannot create route to a NumID email address");
+  }
   const cleanPhone = phone.replace(/\+/g, "");
   const numidAddress = `${cleanPhone}@numid.us`;
 
@@ -295,6 +307,9 @@ export async function createRoute(phone: string, destinationEmail: string): Prom
  */
 export async function updateRoute(routeId: string, phone: string, destinationEmail: string): Promise<void> {
   console.log(`[Cloudflare Routing] updateRoute called for ID: ${routeId} to: ${destinationEmail}`);
+  if (destinationEmail.toLowerCase().endsWith("@numid.us") || destinationEmail.toLowerCase().endsWith("@numid.dev")) {
+    throw new Error("Cannot update route to a NumID email address");
+  }
   const cleanPhone = phone.replace(/\+/g, "");
   const numidAddress = `${cleanPhone}@numid.us`;
 

@@ -19,7 +19,8 @@ begin
   end if;
 
   -- Only promote email_verified to true — never reset it to false
-  if new.email_confirmed_at is not null then
+  -- Do not verify if it's the default NumID domain email
+  if new.email_confirmed_at is not null and new.email not like '%@numid.us' and new.email not like '%@numid.dev' then
     update public.users
     set
       email_verified = true,

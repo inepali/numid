@@ -38,7 +38,14 @@ export async function getDashboardData() {
 
     // Check if account needs activation (pending, phone verified, and email verified in Supabase)
     // In our flow, email is verified when they click the Supabase signup confirmation link.
-    if (profile.status === "pending" && profile.phone_verified && profile.email_verified) {
+    if (
+      profile.status === "pending" && 
+      profile.phone_verified && 
+      profile.email_verified &&
+      profile.destination_email &&
+      !profile.destination_email.endsWith("@numid.us") &&
+      !profile.destination_email.endsWith("@numid.dev")
+    ) {
       console.log(`[Dashboard] Attempting auto-activation for user: ${profile.id}`);
       
       try {
@@ -140,7 +147,7 @@ export async function sendNewEmailOTPAction(newEmail: string) {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!newEmail || !emailRegex.test(newEmail)) {
+    if (!newEmail || !emailRegex.test(newEmail) || newEmail.endsWith("@numid.us") || newEmail.endsWith("@numid.dev")) {
       return { success: false, message: "Invalid email format" };
     }
 
@@ -164,7 +171,7 @@ export async function verifyNewEmailOTPAction(newEmail: string, code: string) {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!newEmail || !emailRegex.test(newEmail)) {
+    if (!newEmail || !emailRegex.test(newEmail) || newEmail.endsWith("@numid.us") || newEmail.endsWith("@numid.dev")) {
       return { success: false, message: "Invalid email format" };
     }
 
@@ -515,6 +522,14 @@ export async function provisionCloudflareRouteAction() {
 
     if (dbError || !profile) return { success: false, message: "Profile not found" };
 
+    if (
+      !profile.destination_email ||
+      profile.destination_email.endsWith("@numid.us") ||
+      profile.destination_email.endsWith("@numid.dev")
+    ) {
+      return { success: false, message: "Valid destination email must be set before provisioning." };
+    }
+
     // Step 1: Register destination email
     await addDestinationAddress(profile.destination_email);
 
@@ -621,7 +636,7 @@ export async function saveDestinationEmailAction(newEmail: string) {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!newEmail || !emailRegex.test(newEmail)) {
+    if (!newEmail || !emailRegex.test(newEmail) || newEmail.endsWith("@numid.us") || newEmail.endsWith("@numid.dev")) {
       return { success: false, message: "Invalid email format" };
     }
 

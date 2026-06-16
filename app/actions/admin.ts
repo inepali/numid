@@ -141,19 +141,28 @@ export async function adminToggleUserStatus(userId: string, currentStatus: strin
           .eq("id", userId);
       }
     } else if (newStatus === "active" && profile.phone_verified && profile.email_verified) {
-      // Recreate routing rule
-      try {
-        await addDestinationAddress(profile.destination_email);
-        const routeId = await createRoute(profile.phone_number, profile.destination_email);
-        
-        await adminClient
-          .from("users")
-          .update({ cloudflare_route_id: routeId, status: newStatus })
-          .eq("id", userId);
-      } catch (cfErr) {
-        console.error("Cloudflare create failed during admin toggle:", cfErr);
-        // Still update DB status
+      if (
+        !profile.destination_email ||
+        profile.destination_email.endsWith("@numid.us") ||
+        profile.destination_email.endsWith("@numid.dev")
+      ) {
+        // Simple status update, cannot route to numid email
         await adminClient.from("users").update({ status: newStatus }).eq("id", userId);
+      } else {
+        // Recreate routing rule
+        try {
+          await addDestinationAddress(profile.destination_email);
+          const routeId = await createRoute(profile.phone_number, profile.destination_email);
+          
+          await adminClient
+            .from("users")
+            .update({ cloudflare_route_id: routeId, status: newStatus })
+            .eq("id", userId);
+        } catch (cfErr) {
+          console.error("Cloudflare create failed during admin toggle:", cfErr);
+          // Still update DB status
+          await adminClient.from("users").update({ status: newStatus }).eq("id", userId);
+        }
       }
     } else {
       // Simple status update
@@ -235,6 +244,13 @@ export async function adminRecreateRoute(userId: string) {
     }
 
     // 2. Provision new route
+    if (
+      !profile.destination_email ||
+      profile.destination_email.endsWith("@numid.us") ||
+      profile.destination_email.endsWith("@numid.dev")
+    ) {
+      return { success: false, message: "Cannot recreate route: user has not set a valid destination email." };
+    }
     await addDestinationAddress(profile.destination_email);
     const routeId = await createRoute(profile.phone_number, profile.destination_email);
 
