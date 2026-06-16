@@ -27,6 +27,20 @@ import {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+function resolveNumidEmail(input: string): string {
+  const trimmed = input.trim();
+  if (trimmed.includes("@")) {
+    return trimmed.toLowerCase();
+  }
+  let cleaned = trimmed.replace(/[-() ]/g, "");
+  if (cleaned.startsWith("+")) {
+    cleaned = cleaned.replace("+", "");
+  } else if (cleaned.length === 10 && /^\d+$/.test(cleaned)) {
+    cleaned = `1${cleaned}`;
+  }
+  return `${cleaned}@numid.us`;
+}
+
 export default function LandingPage() {
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
@@ -63,9 +77,10 @@ export default function LandingPage() {
     }
     setIsPending(true);
     try {
+      const resolvedEmail = resolveNumidEmail(loginEmail);
       const supabase = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       const { error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
+        email: resolvedEmail,
         password: loginPassword,
       });
       if (error) {

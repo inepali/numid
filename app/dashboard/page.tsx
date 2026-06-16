@@ -112,6 +112,20 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mock-supab
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-anon-key";
 const supabase = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+function resolveNumidEmail(input: string): string {
+  const trimmed = input.trim();
+  if (trimmed.includes("@")) {
+    return trimmed.toLowerCase();
+  }
+  let cleaned = trimmed.replace(/[-() ]/g, "");
+  if (cleaned.startsWith("+")) {
+    cleaned = cleaned.replace("+", "");
+  } else if (cleaned.length === 10 && /^\d+$/.test(cleaned)) {
+    cleaned = `1${cleaned}`;
+  }
+  return `${cleaned}@numid.us`;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -242,8 +256,9 @@ export default function DashboardPage() {
     setLoginLoading(true);
 
     try {
+      const resolvedEmail = resolveNumidEmail(loginEmail);
       const { error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
+        email: resolvedEmail,
         password: loginPassword,
       });
 
