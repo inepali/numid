@@ -462,7 +462,12 @@ export default function DashboardPage() {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Password</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block uppercase tracking-wide">Password</label>
+                <Link href="/forgot-password" className="text-xs text-indigo-650 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold transition-colors">
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative flex items-center">
                 <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
                   <Lock className="w-4 h-4" />

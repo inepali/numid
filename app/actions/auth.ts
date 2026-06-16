@@ -5,7 +5,8 @@ import {
   sendSMSVerification, 
   checkSMSVerification,
   sendEmailVerification,
-  checkEmailVerification
+  checkEmailVerification,
+  formatPhoneNumber
 } from "@/lib/twilio-verify";
 import { addDestinationAddress } from "@/lib/cloudflare-routing";
 import { cookies } from "next/headers";
@@ -216,5 +217,143 @@ export async function signUpAction(formData: FormData) {
     };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to complete signup" };
+  }
+}
+
+/**
+ * Action: Sends SMS OTP for password reset lookup by phone number/email
+ */
+export async function sendPasswordResetOTPAction(phoneOrEmail: string) {
+  try {
+    if (!phoneOrEmail || phoneOrEmail.trim().length === 0) {
+      return { success: false, message: "Please enter your phone number or email address." };
+    }
+
+    let phoneNumber = "";
+    let isEmail = phoneOrEmail.includes("@");
+    const adminClient = createAdminClient();
+
+    if (isEmail && !phoneOrEmail.trim().toLowerCase().endsWith("@numid.us")) {
+      // Lookup by destination email
+      const { data: profiles, error } = await adminClient
+        .from("users")
+        .select("phone_number")
+        .eq("destination_email", phoneOrEmail.trim().toLowerCase())
+        .limit(1);
+      if (error || !profiles || profiles.length === 0) {
+        return { success: false, message: "No account found with this destination email." };
+      }
+      phoneNumber = profiles[0].phone_number;
+    } else {
+      // It's a phone number or NumID email
+      let phonePart = phoneOrEmail.trim();
+      if (phonePart.endsWith("@numid.us")) {
+        phonePart = phonePart.split("@")[0];
+      }
+      const formattedPhone = formatPhoneNumber(phonePart);
+      const { data: profiles, error } = await adminClient
+        .from("users")
+        .select("phone_number")
+        .eq("phone_number", formattedPhone)
+        .limit(1);
+      if (error || !profiles || profiles.length === 0) {
+        return { success: false, message: "No account found with this phone number." };
+      }
+      phoneNumber = profiles[0].phone_number;
+    }
+
+    // Rate Limiting (5 requests per hour)
+    const rateLimit = checkRateLimit(phoneNumber);
+    if (!rateLimit.allowed) {
+      const minsLeft = Math.ceil((rateLimit.resetTime - Date.now()) / 60000);
+      return { 
+        success: false, 
+        message: `Rate limit exceeded. Maximum 5 OTP requests per hour. Try again in ${minsLeft} minutes.` 
+      };
+    }
+
+    const res = await sendSMSVerification(phoneNumber);
+    return res;
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to send reset code." };
+  }
+}
+
+/**
+ * Action: Verifies SMS OTP and resets user password via Supabase Auth Admin
+ */
+export async function resetPasswordWithOTPAction(phoneOrEmail: string, code: string, newPassword: string) {
+  try {
+    if (!phoneOrEmail || !code || !newPassword) {
+      return { success: false, message: "All fields are required." };
+    }
+
+    if (newPassword.length < 6) {
+      return { success: false, message: "Password must be at least 6 characters." };
+    }
+
+    let phoneNumber = "";
+    let userId = "";
+    let isEmail = phoneOrEmail.includes("@");
+    const adminClient = createAdminClient();
+
+    if (isEmail && !phoneOrEmail.trim().toLowerCase().endsWith("@numid.us")) {
+      const { data: profiles, error } = await adminClient
+        .from("users")
+        .select("id, phone_number")
+        .eq("destination_email", phoneOrEmail.trim().toLowerCase())
+        .limit(1);
+      if (error || !profiles || profiles.length === 0) {
+        return { success: false, message: "No account found." };
+      }
+      phoneNumber = profiles[0].phone_number;
+      userId = profiles[0].id;
+    } else {
+      let phonePart = phoneOrEmail.trim();
+      if (phonePart.endsWith("@numid.us")) {
+        phonePart = phonePart.split("@")[0];
+      }
+      const formattedPhone = formatPhoneNumber(phonePart);
+      const { data: profiles, error } = await adminClient
+        .from("users")
+        .select("id, phone_number")
+        .eq("phone_number", formattedPhone)
+        .limit(1);
+      if (error || !profiles || profiles.length === 0) {
+        return { success: false, message: "No account found." };
+      }
+      phoneNumber = profiles[0].phone_number;
+      userId = profiles[0].id;
+    }
+
+    // Verify code
+    const verifyRes = await checkSMSVerification(phoneNumber, code);
+    if (!verifyRes.success) {
+      return { success: false, message: "Invalid or expired verification code." };
+    }
+
+    // Update password in Supabase Auth using admin client
+    const { error: resetError } = await adminClient.auth.admin.updateUserById(
+      userId,
+      { password: newPassword }
+    );
+
+    if (resetError) {
+      return { success: false, message: resetError.message };
+    }
+
+    // Audit Log
+    await adminClient.from("audit_logs").insert({
+      user_id: userId,
+      action: "password_reset_success",
+      metadata: { phone_number: phoneNumber }
+    });
+
+    return { 
+      success: true, 
+      message: "Password reset successful! You can now sign in with your new password." 
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to reset password." };
   }
 }

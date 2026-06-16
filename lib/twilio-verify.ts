@@ -19,7 +19,7 @@ const setMockOtp = (phone: string, otp: string) => {
 };
 
 // Smarter E.164 phone formatting helper
-function formatPhoneNumber(phone: string): string {
+export function formatPhoneNumber(phone: string): string {
   let cleaned = phone.trim().replace(/[-() ]/g, ""); // Remove formatting
 
   if (cleaned.length === 10 && /^\d+$/.test(cleaned)) {
