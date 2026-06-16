@@ -98,7 +98,7 @@ export async function getDashboardData() {
         }
 
         // Fetch fresh profile state
-        const { data: updatedProfile } = await supabase
+        const { data: updatedProfile } = await adminClient
           .from("users")
           .select("*")
           .eq("id", user.id)
@@ -244,7 +244,8 @@ export async function checkCloudflareStatusAction() {
       return { success: false, message: "Unauthorized" };
     }
 
-    const { data: profile } = await supabase.from("users").select("*").eq("id", user.id).single();
+    const adminClient = createAdminClient();
+    const { data: profile } = await adminClient.from("users").select("*").eq("id", user.id).single();
     if (!profile) {
       return { success: false, message: "Profile not found" };
     }
@@ -258,9 +259,6 @@ export async function checkCloudflareStatusAction() {
         message: "Cloudflare verification is still pending. Please check your inbox and click their verification link." 
       };
     }
-
-    const adminClient = createAdminClient();
-
     // The address is verified in Cloudflare! Update the routing rule
     let routeId = profile.cloudflare_route_id;
 
@@ -313,9 +311,10 @@ export async function exportDataAction() {
       return { success: false, message: "Unauthorized" };
     }
 
-    const { data: profile } = await supabase.from("users").select("*").eq("id", user.id).single();
-    const { data: verificationLogs } = await supabase.from("verification_logs").select("*").eq("user_id", user.id);
-    const { data: auditLogs } = await supabase.from("audit_logs").select("*").eq("user_id", user.id);
+    const adminClient = createAdminClient();
+    const { data: profile } = await adminClient.from("users").select("*").eq("id", user.id).single();
+    const { data: verificationLogs } = await adminClient.from("verification_logs").select("*").eq("user_id", user.id);
+    const { data: auditLogs } = await adminClient.from("audit_logs").select("*").eq("user_id", user.id);
 
     const exportBlob = {
       exportedAt: new Date().toISOString(),
@@ -345,7 +344,8 @@ export async function deleteAccountAction() {
       return { success: false, message: "Unauthorized" };
     }
 
-    const { data: profile } = await supabase.from("users").select("cloudflare_route_id").eq("id", user.id).single();
+    const adminClient = createAdminClient();
+    const { data: profile } = await adminClient.from("users").select("cloudflare_route_id").eq("id", user.id).single();
     
     // 1. Delete Cloudflare Route if active
     if (profile?.cloudflare_route_id) {
@@ -355,8 +355,6 @@ export async function deleteAccountAction() {
         console.error("[Dashboard] Failed to clean up Cloudflare route during account deletion:", cfErr);
       }
     }
-
-    const adminClient = createAdminClient();
 
     // 2. Delete user from auth.users (which cascades to public.users and verification/audit logs)
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
