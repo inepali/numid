@@ -14,6 +14,7 @@ import {
   testCloudflareConnectionAction,
   provisionCloudflareRouteAction,
   updateSocialProfilesAction,
+  saveDestinationEmailAction,
 } from "@/app/actions/dashboard";
 import { 
   Mail, 
@@ -176,6 +177,8 @@ export default function DashboardPage() {
     ? window.location.origin + "/" + (profile?.phone_number || "").replace("+", "")
     : "https://numid.dev/" + (profile?.phone_number || "").replace("+", "");
 
+  const isEmailUnset = !profile?.destination_email || profile.destination_email === profile.numid_address || profile.destination_email.endsWith("@numid.us");
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(profileUrl);
     setCopiedLink(true);
@@ -262,6 +265,24 @@ export default function DashboardPage() {
     setIsAuthenticated(false);
     setProfile(null);
     router.push("/");
+  };
+
+  const handleSaveDestinationEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (!newEmail) return;
+
+    startTransition(async () => {
+      const res = await saveDestinationEmailAction(newEmail);
+      if (res.success) {
+        setSuccessMsg(res.message);
+        await loadData();
+      } else {
+        setErrorMsg(res.message);
+      }
+    });
   };
 
   const handleSendEmailOTP = (e: React.FormEvent) => {
@@ -424,14 +445,14 @@ export default function DashboardPage() {
 
           <form onSubmit={handleSignIn} className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Email Address</label>
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">NumID Email</label>
               <div className="relative flex items-center">
                 <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
                   <Mail className="w-4 h-4" />
                 </div>
                 <input
                   type="email"
-                  placeholder="name@email.com"
+                  placeholder="your-phone@numid.us"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none"
@@ -549,426 +570,519 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 1. Main Configuration Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-          
-          {/* Forwarding Status Card (Left block) */}
-          <div className="md:col-span-2 p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-none">
+        {isEmailUnset ? (
+          <div className="max-w-md mx-auto p-6 sm:p-8 bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl relative overflow-hidden transition-all duration-300">
             <div className="absolute top-0 right-0 w-[200px] h-[200px] rounded-full bg-indigo-650/[0.03] dark:bg-indigo-600/5 blur-[50px] pointer-events-none" />
+            
+            <div className="text-center space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 mx-auto flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <Mail className="w-6 h-6 animate-pulse" />
+              </div>
+              
+              <div>
+                <h3 className="font-display font-extrabold text-slate-900 dark:text-white text-lg sm:text-xl">Set Forwarding Destination</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                  Incoming mail to your NumID <strong className="font-mono text-indigo-600 dark:text-indigo-400">{profile?.numid_address}</strong> will be forwarded to your private inbox.
+                </p>
+              </div>
+            </div>
 
-            <div>
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">My NumID</span>
-                  <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white font-mono mt-1 select-all hover:text-indigo-650 dark:hover:text-indigo-300 transition-colors">
-                    {profile?.numid_address?.replace("+", "")}
-                  </h2>
+            <form onSubmit={handleSaveDestinationEmail} className="mt-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Destination Email</label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
+                    required
+                  />
                 </div>
-
-                <span className={`px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wide ${(profile?.phone_verified && profile?.email_verified) || profile?.status === "active" ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30" : "bg-orange-50 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-500/30"}`}>
-                  {(profile?.phone_verified && profile?.email_verified) || profile?.status === "active" ? "VERIFIED" : (profile?.status?.toUpperCase() || "PENDING")}
+                <span className="text-[10px] text-slate-500 block mt-1.5 leading-relaxed">
+                  Cloudflare will forward all incoming emails here. Verification link will be sent to this email.
                 </span>
               </div>
 
-              {/* Status details row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-200 dark:border-white/5 pt-6 mt-6">
-                <div className="flex items-center space-x-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200 dark:border-white/5">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${profile?.phone_verified ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-red-50 dark:bg-red-500/10 text-red-650 dark:text-red-400"}`}>
-                    <Smartphone className="w-4 h-4" />
+              <button
+                type="submit"
+                disabled={isPending}
+                className="w-full bg-indigo-600 hover:bg-indigo-550 active:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all shadow-md flex items-center justify-center space-x-2 text-xs"
+              >
+                {isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <span>Save & Register Routing</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        ) : (
+          <>
+            {/* Warning Popup Banner if Cloudflare is not verified */}
+            {(profile?.status === "pending" || !profile?.email_verified) && (
+              <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-550 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0 animate-bounce" />
+                  <div>
+                    <p className="font-bold text-amber-900 dark:text-amber-255 animate-pulse">Email Forwarding Pending Cloudflare Verification</p>
+                    <p className="mt-0.5 leading-relaxed">
+                      Cloudflare has sent a verification email to <strong className="font-mono text-slate-900 dark:text-white">{profile?.destination_email}</strong>. Please check your inbox and click their verification link to activate email forwarding.
+                    </p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Verified Phone</p>
-                    <div className="flex items-center space-x-2">
-                      <p className="text-xs text-slate-900 dark:text-white font-medium">{profile?.phone_number}</p>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${profile?.phone_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
+                </div>
+                
+                <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 justify-end">
+                  {process.env.NEXT_PUBLIC_MOCK_APIS === "true" && (
+                    <button
+                      onClick={handleMockVerify}
+                      disabled={isPending}
+                      className="px-3 py-1.5 rounded-lg bg-amber-105 hover:bg-amber-200 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-850 dark:text-amber-200 text-[11px] font-bold border border-amber-250 dark:border-amber-500/30 transition-all cursor-pointer"
+                    >
+                      Simulate Verify
+                    </button>
+                  )}
+                  <button
+                    onClick={handleCheckCloudflare}
+                    disabled={isPending}
+                    className="px-3.5 py-1.5 rounded-lg bg-amber-605 hover:bg-amber-550 active:bg-amber-700 text-white text-[11px] font-bold transition-all flex items-center gap-1.5 shadow cursor-pointer"
+                  >
+                    {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                    <span>Check Status</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 1. Main Configuration Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+              
+              {/* Forwarding Status Card (Left block) */}
+              <div className="md:col-span-2 p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 relative overflow-hidden flex flex-col justify-between shadow-sm dark:shadow-none">
+                <div className="absolute top-0 right-0 w-[200px] h-[200px] rounded-full bg-indigo-650/[0.03] dark:bg-indigo-600/5 blur-[50px] pointer-events-none" />
+
+                <div>
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-505 dark:text-slate-400 tracking-wider">My NumID</span>
+                      <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white font-mono mt-1 select-all hover:text-indigo-650 dark:hover:text-indigo-300 transition-colors">
+                        {profile?.numid_address?.replace("+", "")}
+                      </h2>
+                    </div>
+
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold font-mono tracking-wide ${(profile?.phone_verified && profile?.email_verified) || profile?.status === "active" ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30" : "bg-orange-50 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-500/30"}`}>
+                      {(profile?.phone_verified && profile?.email_verified) || profile?.status === "active" ? "VERIFIED" : (profile?.status?.toUpperCase() || "PENDING")}
+                    </span>
+                  </div>
+
+                  {/* Status details row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-200 dark:border-white/5 pt-6 mt-6">
+                    <div className="flex items-center space-x-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200 dark:border-white/5">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${profile?.phone_verified ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-red-50 dark:bg-red-500/10 text-red-650 dark:text-red-400"}`}>
+                        <Smartphone className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Verified Phone</p>
+                        <div className="flex items-center space-x-2">
+                          <p className="text-xs text-slate-900 dark:text-white font-medium">{profile?.phone_number}</p>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${profile?.phone_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
+                            {profile?.phone_verified ? "Verified" : "Pending"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200 dark:border-white/5">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${profile?.email_verified ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-red-50 dark:bg-red-500/10 text-red-650 dark:text-red-400"}`}>
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-slate-505 dark:text-slate-400 uppercase font-bold">Destination Email</p>
+                        <div className="flex items-center space-x-2">
+                          <p className="text-xs text-slate-900 dark:text-white font-medium truncate max-w-[110px] xs:max-w-[165px] sm:max-w-none">{profile?.destination_email}</p>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${profile?.email_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-750 dark:text-red-300"}`}>
+                            {profile?.email_verified ? "Verified" : "Pending"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions panel */}
+                <div className="flex flex-col sm:flex-row items-center gap-3 mt-8 border-t border-slate-200 dark:border-white/5 pt-6 w-full sm:w-auto">
+                  <button
+                    onClick={() => {
+                      setNewEmail(profile?.destination_email || "");
+                      setShowEmailModal(true);
+                    }}
+                    disabled={isPending}
+                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all text-center flex items-center justify-center"
+                  >
+                    Change Destination
+                  </button>
+                  
+                  {profile?.status === "pending" && (
+                    <button
+                      onClick={handleCheckCloudflare}
+                      disabled={isPending}
+                      className="w-full sm:w-auto bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      <span>Check Cloudflare Status</span>
+                    </button>
+                  )}
+                </div>
+
+              </div>
+
+              {/* Verification Indicators Panel (Right block) */}
+              <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 flex flex-col justify-between shadow-sm dark:shadow-none">
+                <div>
+                  <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg mb-4">Verification Checklists</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Both verification checkmarks must be green to activate email forwarding routes.</p>
+                  
+                  <div className="space-y-4">
+                    
+                    {/* Phone Item */}
+                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/5">
+                      <div className="flex items-center space-x-3">
+                        <Smartphone className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                        <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">Phone Verified</span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${profile?.phone_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
                         {profile?.phone_verified ? "Verified" : "Pending"}
                       </span>
                     </div>
-                  </div>
-                </div>
 
-                <div className="flex items-center space-x-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200 dark:border-white/5">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${profile?.email_verified ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-red-50 dark:bg-red-500/10 text-red-650 dark:text-red-400"}`}>
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Destination Email</p>
-                    <div className="flex items-center space-x-2">
-                      <p className="text-xs text-slate-900 dark:text-white font-medium truncate max-w-[110px] xs:max-w-[165px] sm:max-w-none">{profile?.destination_email}</p>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${profile?.email_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
+                    {/* Email Item */}
+                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/5">
+                      <div className="flex items-center space-x-3">
+                        <Mail className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                        <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">Email Verified</span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${profile?.email_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
                         {profile?.email_verified ? "Verified" : "Pending"}
                       </span>
                     </div>
+
                   </div>
                 </div>
+
+                {/* Created date information */}
+                <div className="text-[10px] text-slate-500 dark:text-slate-450 uppercase font-bold tracking-wider mt-6 pt-4 border-t border-slate-200 dark:border-white/5">
+                  Created at: {profile ? new Date(profile.created_at).toLocaleDateString() : ""}
+                </div>
               </div>
+
             </div>
 
-            {/* Actions panel */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 mt-8 border-t border-slate-200 dark:border-white/5 pt-6 w-full sm:w-auto">
-              <button
-                onClick={() => {
-                  setNewEmail(profile?.destination_email || "");
-                  setShowEmailModal(true);
-                }}
-                disabled={isPending}
-                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all text-center flex items-center justify-center"
-              >
-                Change Destination
-              </button>
-              
-              {profile?.status === "pending" && (
-                <button
-                  onClick={handleCheckCloudflare}
-                  disabled={isPending}
-                  className="w-full sm:w-auto bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center gap-1.5"
-                >
-                  {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                  <span>Check Cloudflare Status</span>
-                </button>
-              )}
-            </div>
-
-          </div>
-
-          {/* Verification Indicators Panel (Right block) */}
-          <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 flex flex-col justify-between shadow-sm dark:shadow-none">
-            <div>
-              <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg mb-4">Verification Checklists</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Both verification checkmarks must be green to activate email forwarding routes.</p>
-              
-              <div className="space-y-4">
-                
-                {/* Phone Item */}
-                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/5">
-                  <div className="flex items-center space-x-3">
-                    <Smartphone className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">Phone Verified</span>
+            {/* Public Identity Profile Card */}
+            <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/5">
+                <div>
+                  <div className="flex items-center space-x-2 text-indigo-650 dark:text-indigo-400">
+                    <Share2 className="w-5 h-5" />
+                    <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg">Public Identity Profile</h3>
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${profile?.phone_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
-                    {profile?.phone_verified ? "Verified" : "Pending"}
-                  </span>
-                </div>
-
-                {/* Email Item */}
-                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/5">
-                  <div className="flex items-center space-x-3">
-                    <Mail className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">Email Verified</span>
-                  </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${profile?.email_verified ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" : "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"}`}>
-                    {profile?.email_verified ? "Verified" : "Pending"}
-                  </span>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Created date information */}
-            <div className="text-[10px] text-slate-500 dark:text-slate-450 uppercase font-bold tracking-wider mt-6 pt-4 border-t border-slate-200 dark:border-white/5">
-              Created at: {profile ? new Date(profile.created_at).toLocaleDateString() : ""}
-            </div>
-          </div>
-
-        </div>
-
-        {/* Public Identity Profile Card */}
-        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/5">
-            <div>
-              <div className="flex items-center space-x-2 text-indigo-650 dark:text-indigo-400">
-                <Share2 className="w-5 h-5" />
-                <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg">Public Identity Profile</h3>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Configure your social networks and contact links. Your profile is live at{" "}
-                <Link
-                  href={`/${profile?.phone_number?.replace("+", "")}`}
-                  target="_blank"
-                  className="text-indigo-655 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold underline inline-flex items-center gap-1"
-                >
-                  <span>numid.dev/{profile?.phone_number?.replace("+", "")}</span>
-                  <ExternalLink className="w-3 h-3" />
-                </Link>
-              </p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={() => setShowShareModal(true)}
-                className="w-full sm:w-auto border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/60 text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
-              >
-                <QrCode className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                <span>Share Profile</span>
-              </button>
-              
-              <button
-                onClick={handleSaveSocialLinks}
-                disabled={isPending}
-                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-505 active:bg-indigo-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
-              >
-                {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>Save Profile Links</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Tab buttons */}
-          <div className="flex overflow-x-auto scrollbar-none border-b border-slate-200 dark:border-white/5 gap-1 -mx-5 sm:mx-0 px-5 sm:px-0">
-            {(Object.keys(PROFILE_CATEGORIES) as ProfileCategoryKey[]).map((tabKey) => (
-              <button
-                key={tabKey}
-                onClick={() => setActiveProfileTab(tabKey)}
-                className={`px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-all border-b-2 -mb-px whitespace-nowrap shrink-0 ${
-                  activeProfileTab === tabKey
-                    ? "border-indigo-500 text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900/50"
-                    : "border-transparent text-slate-505 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
-              >
-                {PROFILE_CATEGORIES[tabKey].title}
-              </button>
-            ))}
-          </div>
-
-          {/* Tab content */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                Active {PROFILE_CATEGORIES[activeProfileTab].title} links:
-              </span>
-              
-              {/* Dropdown to add new key */}
-              {Object.keys(PROFILE_CATEGORIES[activeProfileTab].services).some(
-                (key) => socialLinks[key] === undefined
-              ) ? (
-                <div className="relative inline-block text-left">
-                  <select
-                    onChange={(e) => {
-                      const selectedKey = e.target.value;
-                      if (selectedKey) {
-                        setSocialLinks((prev) => ({ ...prev, [selectedKey]: "" }));
-                        e.target.value = ""; // reset dropdown selection
-                      }
-                    }}
-                    defaultValue=""
-                    className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500/40 cursor-pointer"
-                  >
-                    <option value="" disabled>+ Add Link / Profile...</option>
-                    {Object.entries(PROFILE_CATEGORIES[activeProfileTab].services)
-                      .filter(([key]) => socialLinks[key] === undefined)
-                      .map(([key, service]) => (
-                        <option key={key} value={key}>
-                          {service.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              ) : (
-                <span className="text-[10px] text-slate-400 dark:text-slate-505 font-bold uppercase tracking-wide">
-                  All active links added
-                </span>
-              )}
-            </div>
-
-            {/* Configured fields list */}
-            {Object.keys(PROFILE_CATEGORIES[activeProfileTab].services).filter(
-              (key) => socialLinks[key] !== undefined
-            ).length === 0 ? (
-              <div className="text-center py-8 rounded-2xl bg-slate-50 dark:bg-slate-900/10 border border-dashed border-slate-200 dark:border-white/5 text-xs text-slate-500">
-                No links added in this category yet. Select a service above to add it.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {Object.entries(PROFILE_CATEGORIES[activeProfileTab].services)
-                  .filter(([key]) => socialLinks[key] !== undefined)
-                  .map(([key, service]) => (
-                    <div
-                      key={key}
-                      className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/40 p-3.5 rounded-xl border border-slate-200 dark:border-white/5 text-xs focus-within:border-indigo-500/30 transition-colors"
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Configure your social networks and contact links. Your profile is live at{" "}
+                    <Link
+                      href={`/${profile?.phone_number?.replace("+", "")}`}
+                      target="_blank"
+                      className="text-indigo-655 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold underline inline-flex items-center gap-1"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 font-bold shrink-0">
-                        {service.name.substring(0, 2)}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <label className="text-[10px] text-slate-505 dark:text-slate-550 font-bold uppercase block mb-1">
-                          {service.name}
-                        </label>
-                        <div className="flex flex-wrap items-center gap-y-1">
-                          {service.prefix && (
-                            <span className="text-slate-550 select-none pr-1.5 font-mono text-[11px] max-w-[120px] sm:max-w-none truncate shrink-0">
-                              {service.prefix.replace("https://", "")}
-                            </span>
-                          )}
-                          <input
-                            type="text"
-                            placeholder={service.placeholder}
-                            value={socialLinks[key]}
-                            onChange={(e) => {
-                              const newVal = e.target.value;
-                              setSocialLinks((prev) => ({ ...prev, [key]: newVal }));
-                            }}
-                            className="bg-transparent border-none p-0 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-0 flex-1 min-w-[120px] font-mono text-xs"
-                          />
-                        </div>
-                      </div>
+                      <span>numid.dev/{profile?.phone_number?.replace("+", "")}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Link>
+                  </p>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setShowShareModal(true)}
+                    className="w-full sm:w-auto border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/60 text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <QrCode className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <span>Share Profile</span>
+                  </button>
+                  
+                  <button
+                    onClick={handleSaveSocialLinks}
+                    disabled={isPending}
+                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-555 active:bg-indigo-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                  >
+                    {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    <span>Save Profile Links</span>
+                  </button>
+                </div>
+              </div>
 
-                      <button
-                        onClick={() => {
-                          setSocialLinks((prev) => {
-                            const updated = { ...prev };
-                            delete updated[key];
-                            return updated;
-                          });
+              {/* Tab buttons */}
+              <div className="flex overflow-x-auto scrollbar-none border-b border-slate-200 dark:border-white/5 gap-1 -mx-5 sm:mx-0 px-5 sm:px-0">
+                {(Object.keys(PROFILE_CATEGORIES) as ProfileCategoryKey[]).map((tabKey) => (
+                  <button
+                    key={tabKey}
+                    onClick={() => setActiveProfileTab(tabKey)}
+                    className={`px-4 py-2.5 rounded-t-xl text-xs font-semibold transition-all border-b-2 -mb-px whitespace-nowrap shrink-0 ${
+                      activeProfileTab === tabKey
+                        ? "border-indigo-500 text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900/50"
+                        : "border-transparent text-slate-505 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    {PROFILE_CATEGORIES[tabKey].title}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab content */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                    Active {PROFILE_CATEGORIES[activeProfileTab].title} links:
+                  </span>
+                  
+                  {/* Dropdown to add new key */}
+                  {Object.keys(PROFILE_CATEGORIES[activeProfileTab].services).some(
+                    (key) => socialLinks[key] === undefined
+                  ) ? (
+                    <div className="relative inline-block text-left">
+                      <select
+                        onChange={(e) => {
+                          const selectedKey = e.target.value;
+                          if (selectedKey) {
+                            setSocialLinks((prev) => ({ ...prev, [selectedKey]: "" }));
+                            e.target.value = ""; // reset dropdown selection
+                          }
                         }}
-                        className="p-2 text-slate-400 dark:text-slate-505 hover:text-red-650 dark:hover:text-red-400 rounded-lg hover:bg-red-500/5 dark:hover:bg-red-500/10 transition-all shrink-0"
-                        title="Remove Link"
+                        defaultValue=""
+                        className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500/40 cursor-pointer"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        <option value="" disabled>+ Add Link / Profile...</option>
+                        {Object.entries(PROFILE_CATEGORIES[activeProfileTab].services)
+                          .filter(([key]) => socialLinks[key] === undefined)
+                          .map(([key, service]) => (
+                            <option key={key} value={key}>
+                              {service.name}
+                            </option>
+                          ))}
+                      </select>
                     </div>
-                  ))}
+                  ) : (
+                    <span className="text-[10px] text-slate-400 dark:text-slate-555 font-bold uppercase tracking-wide">
+                      All active links added
+                    </span>
+                  )}
+                </div>
+
+                {/* Configured fields list */}
+                {Object.keys(PROFILE_CATEGORIES[activeProfileTab].services).filter(
+                  (key) => socialLinks[key] !== undefined
+                ).length === 0 ? (
+                  <div className="text-center py-8 rounded-2xl bg-slate-50 dark:bg-slate-900/10 border border-dashed border-slate-200 dark:border-white/5 text-xs text-slate-500">
+                    No links added in this category yet. Select a service above to add it.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {Object.entries(PROFILE_CATEGORIES[activeProfileTab].services)
+                      .filter(([key]) => socialLinks[key] !== undefined)
+                      .map(([key, service]) => (
+                        <div
+                          key={key}
+                          className="flex items-center gap-3 bg-slate-55 dark:bg-slate-900/40 p-3.5 rounded-xl border border-slate-200 dark:border-white/5 text-xs focus-within:border-indigo-500/30 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 font-bold shrink-0">
+                            {service.name.substring(0, 2)}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <label className="text-[10px] text-slate-500 dark:text-slate-550 font-bold uppercase block mb-1">
+                              {service.name}
+                            </label>
+                            <div className="flex flex-wrap items-center gap-y-1">
+                              {service.prefix && (
+                                <span className="text-slate-550 select-none pr-1.5 font-mono text-[11px] max-w-[120px] sm:max-w-none truncate shrink-0">
+                                  {service.prefix.replace("https://", "")}
+                                </span>
+                              )}
+                              <input
+                                type="text"
+                                placeholder={service.placeholder}
+                                value={socialLinks[key]}
+                                onChange={(e) => {
+                                  const newVal = e.target.value;
+                                  setSocialLinks((prev) => ({ ...prev, [key]: newVal }));
+                                }}
+                                className="bg-transparent border-none p-0 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-0 flex-1 min-w-[120px] font-mono text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              setSocialLinks((prev) => {
+                                const updated = { ...prev };
+                                delete updated[key];
+                                return updated;
+                              });
+                            }}
+                            className="p-2 text-slate-400 dark:text-slate-505 hover:text-red-650 dark:hover:text-red-400 rounded-lg hover:bg-red-500/5 dark:hover:bg-red-500/10 transition-all shrink-0"
+                            title="Remove Link"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 2. Sandbox Testing Console (Visible if in Mock Mode) */}
+            {process.env.NEXT_PUBLIC_MOCK_APIS === "true" && (
+              <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-500/20 shadow-sm relative">
+                <div className="flex items-center space-x-2 text-indigo-650 dark:text-indigo-400 mb-2">
+                  <Sparkles className="w-5 h-5 animate-pulse" />
+                  <h3 className="font-display font-bold text-slate-900 dark:text-white text-md">Mock Sandbox Console</h3>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">You are running the application in <strong>Mock Mode</strong>. Click below to simulate user clicking Cloudflare's email verification link.</p>
+                
+                <button
+                  onClick={handleMockVerify}
+                  disabled={isPending}
+                  className="w-full sm:w-auto bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600/30 dark:hover:bg-indigo-600/40 text-indigo-750 dark:text-indigo-200 text-xs font-bold px-4 py-2.5 rounded-xl border border-indigo-200 dark:border-indigo-500/30 transition-all flex items-center justify-center gap-1.5"
+                >
+                  {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Simulate Cloudflare Email Link Verification Click</span>
+                </button>
               </div>
             )}
-          </div>
-        </div>
 
-        {/* 2. Sandbox Testing Console (Visible if in Mock Mode) */}
-        {process.env.NEXT_PUBLIC_MOCK_APIS === "true" && (
-          <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-500/20 shadow-sm relative">
-            <div className="flex items-center space-x-2 text-indigo-650 dark:text-indigo-400 mb-2">
-              <Sparkles className="w-5 h-5 animate-pulse" />
-              <h3 className="font-display font-bold text-slate-900 dark:text-white text-md">Mock Sandbox Console</h3>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">You are running the application in <strong>Mock Mode</strong>. Click below to simulate user clicking Cloudflare's email verification link.</p>
-            
-            <button
-              onClick={handleMockVerify}
-              disabled={isPending}
-              className="w-full sm:w-auto bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600/30 dark:hover:bg-indigo-600/40 text-indigo-750 dark:text-indigo-200 text-xs font-bold px-4 py-2.5 rounded-xl border border-indigo-200 dark:border-indigo-500/30 transition-all flex items-center justify-center gap-1.5"
-            >
-              {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>Simulate Cloudflare Email Link Verification Click</span>
-            </button>
-          </div>
-        )}
+            {/* 2b. Cloudflare Dev Console — always visible for testing */}
+            <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-orange-50/10 dark:bg-slate-900/60 border border-orange-200 dark:border-orange-500/20 shadow-sm relative">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-4 h-4 text-orange-650 dark:text-orange-400" />
+                  <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm">Cloudflare Email Routing Dev Console</h3>
+                </div>
+                <span className="w-fit text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20 uppercase tracking-wider">
+                  {process.env.NEXT_PUBLIC_MOCK_APIS === "true" ? "Mock Mode" : "Live"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
+                Use these controls to validate your Cloudflare credentials and manually trigger email routing provisioning for your account.
+              </p>
 
-        {/* 2b. Cloudflare Dev Console — always visible for testing */}
-        <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-orange-50/10 dark:bg-slate-900/60 border border-orange-200 dark:border-orange-500/20 shadow-sm relative">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-            <div className="flex items-center space-x-2">
-              <Zap className="w-4 h-4 text-orange-650 dark:text-orange-400" />
-              <h3 className="font-display font-bold text-slate-900 dark:text-white text-sm">Cloudflare Email Routing Dev Console</h3>
-            </div>
-            <span className="w-fit text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20 uppercase tracking-wider">
-              {process.env.NEXT_PUBLIC_MOCK_APIS === "true" ? "Mock Mode" : "Live"}
-            </span>
-          </div>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
-            Use these controls to validate your Cloudflare credentials and manually trigger email routing provisioning for your account.
-          </p>
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <button
+                  id="cf-test-btn"
+                  onClick={handleTestCloudflare}
+                  disabled={cfLoading}
+                  className="w-full sm:w-auto bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center gap-1.5"
+                >
+                  {cfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" />}
+                  <span>Test Cloudflare Connection</span>
+                </button>
 
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <button
-              id="cf-test-btn"
-              onClick={handleTestCloudflare}
-              disabled={cfLoading}
-              className="w-full sm:w-auto bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center gap-1.5"
-            >
-              {cfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" />}
-              <span>Test Cloudflare Connection</span>
-            </button>
+                <button
+                  id="cf-provision-btn"
+                  onClick={handleProvisionCloudflare}
+                  disabled={cfLoading}
+                  className="w-full sm:w-auto bg-orange-50 hover:bg-orange-100 dark:bg-orange-600/20 dark:hover:bg-orange-600/30 text-orange-700 dark:text-orange-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-orange-200 dark:border-orange-500/30 transition-all flex items-center justify-center gap-1.5"
+                >
+                  {cfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                  <span>Provision My Route Now</span>
+                </button>
+              </div>
 
-            <button
-              id="cf-provision-btn"
-              onClick={handleProvisionCloudflare}
-              disabled={cfLoading}
-              className="w-full sm:w-auto bg-orange-50 hover:bg-orange-100 dark:bg-orange-600/20 dark:hover:bg-orange-600/30 text-orange-700 dark:text-orange-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-orange-200 dark:border-orange-500/30 transition-all flex items-center justify-center gap-1.5"
-            >
-              {cfLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-              <span>Provision My Route Now</span>
-            </button>
-          </div>
-
-          {cfResult && (
-            <div className={`rounded-xl p-4 border text-xs space-y-2 ${
-              cfResult.success
-                ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-250 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-300"
-                : "bg-red-50 dark:bg-red-500/10 border-red-250 dark:border-red-500/20 text-red-800 dark:text-red-300"
-            }`}>
-              <p className="font-semibold">{cfResult.message}</p>
-              {cfResult.detail && (
-                <pre className="text-[10px] font-mono text-slate-650 dark:text-slate-400 bg-slate-100 dark:bg-black/20 rounded-lg p-3 overflow-x-auto">
-                  {JSON.stringify(cfResult.detail, null, 2)}
-                </pre>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* 3. History Logs Timeline */}
-        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none">
-          <div className="flex items-center space-x-2.5 mb-6">
-            <History className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-            <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg">Audit Trails</h3>
-          </div>
-
-          {auditLogs.length === 0 ? (
-            <div className="text-center py-8 text-xs text-slate-500">
-              No recent audit trail logs available.
-            </div>
-          ) : (
-            <div className="relative border-l border-slate-200 dark:border-white/5 ml-3 pl-4 space-y-6">
-              {auditLogs.map((log) => (
-                <div key={log.id} className="relative text-left">
-                  {/* Timeline point */}
-                  <span className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-350 dark:border-slate-700" />
-                  
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-650 dark:text-slate-400">
-                    <span className="font-semibold text-slate-850 dark:text-slate-300 uppercase tracking-wider">{log.action.replace(/_/g, " ")}</span>
-                    <span className="text-[10px] text-slate-500 font-mono mt-1 sm:mt-0">
-                      {new Date(log.created_at).toLocaleString()}
-                    </span>
-                  </div>
-                  
-                  {log.metadata && Object.keys(log.metadata).length > 0 && (
-                    <pre className="mt-2 p-3 rounded-lg bg-slate-55 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 text-[10px] font-mono text-slate-600 dark:text-slate-500 overflow-x-auto max-w-full">
-                      {JSON.stringify(log.metadata, null, 2)}
+              {cfResult && (
+                <div className={`rounded-xl p-4 border text-xs space-y-2 ${
+                  cfResult.success
+                    ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-250 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-300"
+                    : "bg-red-50 dark:bg-red-500/10 border-red-250 dark:border-red-500/20 text-red-800 dark:text-red-300"
+                }`}>
+                  <p className="font-semibold">{cfResult.message}</p>
+                  {cfResult.detail && (
+                    <pre className="text-[10px] font-mono text-slate-650 dark:text-slate-400 bg-slate-100 dark:bg-black/20 rounded-lg p-3 overflow-x-auto">
+                      {JSON.stringify(cfResult.detail, null, 2)}
                     </pre>
                   )}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
 
-        {/* 4. Settings & Account deletion panel (Danger Zone) */}
-        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 flex flex-col sm:flex-row justify-between sm:items-center gap-6 shadow-sm dark:shadow-none">
-          <div>
-            <h3 className="font-display font-bold text-slate-900 dark:text-white text-md">Danger & Support Zone</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-450 mt-1">Export your configurations or delete the account mapping permanently.</p>
-          </div>
+            {/* 3. History Logs Timeline */}
+            <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none">
+              <div className="flex items-center space-x-2.5 mb-6">
+                <History className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg">Audit Trails</h3>
+              </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <button
-              onClick={handleExportData}
-              disabled={isPending}
-              className="w-full sm:w-auto bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center gap-1.5"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export Account JSON</span>
-            </button>
+              {auditLogs.length === 0 ? (
+                <div className="text-center py-8 text-xs text-slate-500">
+                  No recent audit trail logs available.
+                </div>
+              ) : (
+                <div className="relative border-l border-slate-200 dark:border-white/5 ml-3 pl-4 space-y-6">
+                  {auditLogs.map((log) => (
+                    <div key={log.id} className="relative text-left">
+                      {/* Timeline point */}
+                      <span className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-350 dark:border-slate-700" />
+                      
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-650 dark:text-slate-400">
+                        <span className="font-semibold text-slate-850 dark:text-slate-300 uppercase tracking-wider">{log.action.replace(/_/g, " ")}</span>
+                        <span className="text-[10px] text-slate-500 font-mono mt-1 sm:mt-0">
+                          {new Date(log.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      
+                      {log.metadata && Object.keys(log.metadata).length > 0 && (
+                        <pre className="mt-2 p-3 rounded-lg bg-slate-55 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 text-[10px] font-mono text-slate-600 dark:text-slate-500 overflow-x-auto max-w-full">
+                          {JSON.stringify(log.metadata, null, 2)}
+                        </pre>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="w-full sm:w-auto bg-red-55 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-750 dark:text-red-400 text-xs font-semibold px-4 py-2.5 rounded-xl border border-red-200 dark:border-red-500/20 transition-all flex items-center justify-center gap-1.5"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Delete Account</span>
-            </button>
-          </div>
-        </div>
+            {/* 4. Settings & Account deletion panel (Danger Zone) */}
+            <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 flex flex-col sm:flex-row justify-between sm:items-center gap-6 shadow-sm dark:shadow-none">
+              <div>
+                <h3 className="font-display font-bold text-slate-900 dark:text-white text-md">Danger & Support Zone</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-450 mt-1">Export your configurations or delete the account mapping permanently.</p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                <button
+                  onClick={handleExportData}
+                  disabled={isPending}
+                  className="w-full sm:w-auto bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export Account JSON</span>
+                </button>
+
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="w-full sm:w-auto bg-red-55 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-750 dark:text-red-400 text-xs font-semibold px-4 py-2.5 rounded-xl border border-red-200 dark:border-red-500/20 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Account</span>
+                </button>
+              </div>
+            </div>
+          </>
+        )}
 
       </main>
 

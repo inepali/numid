@@ -695,7 +695,7 @@ export default function LandingPage() {
                 )}
 
                 <div>
-                  <label htmlFor="login-email" className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Email</label>
+                  <label htmlFor="login-email" className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">NumID Email</label>
                   <div className="relative flex items-center">
                     <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
                       <Mail className="w-5 h-5" />
@@ -703,7 +703,7 @@ export default function LandingPage() {
                     <input
                       id="login-email"
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder="your-phone@numid.us"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"

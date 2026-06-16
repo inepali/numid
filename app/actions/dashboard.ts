@@ -607,3 +607,54 @@ export async function updateSocialProfilesAction(profiles: Record<string, string
     return { success: false, message: error.message || "Failed to update social profiles" };
   }
 }
+
+/**
+ * Action: Save destination email directly to DB, and register it on Cloudflare Email Routing
+ */
+export async function saveDestinationEmailAction(newEmail: string) {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!newEmail || !emailRegex.test(newEmail)) {
+      return { success: false, message: "Invalid email format" };
+    }
+
+    const adminClient = createAdminClient();
+
+    // 1. Register new email as a destination address in Cloudflare
+    await addDestinationAddress(newEmail);
+
+    // 2. Set DB user status to pending, and email_verified to false (until Cloudflare verifies it)
+    const { error: dbError } = await adminClient
+      .from("users")
+      .update({
+        destination_email: newEmail,
+        email_verified: false,
+        status: "pending", 
+      })
+      .eq("id", user.id);
+
+    if (dbError) throw dbError;
+
+    // 3. Log audit event
+    await adminClient.from("audit_logs").insert({
+      user_id: user.id,
+      action: "save_destination_email",
+      metadata: { destination_email: newEmail },
+    });
+
+    return {
+      success: true,
+      message: "Destination email saved! We have registered it with Cloudflare. Please check your inbox for Cloudflare's verification email and click the link to activate forwarding.",
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to save destination email" };
+  }
+}
+

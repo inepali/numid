@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { 
   sendPhoneOTPAction, 
   verifyPhoneOTPAction, 
-  sendEmailOTPAction, 
   signUpAction 
 } from "@/app/actions/auth";
 import { createBrowserClient } from "@supabase/ssr";
@@ -22,7 +21,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 
-type SetupStep = "PHONE_INPUT" | "OTP_INPUT" | "ACCOUNT_DETAILS" | "EMAIL_OTP_INPUT" | "EMAIL_PENDING";
+type SetupStep = "PHONE_INPUT" | "OTP_INPUT" | "ACCOUNT_DETAILS" | "EMAIL_PENDING";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mock-supabase.supabase.co";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-anon-key";
@@ -36,9 +35,7 @@ export default function SignupPage() {
   // Form states
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [emailOtp, setEmailOtp] = useState("");
 
   // Error/Success state
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -90,20 +87,20 @@ export default function SignupPage() {
       const res = await verifyPhoneOTPAction(phone, otp);
       if (res.success) {
         setStep("ACCOUNT_DETAILS");
-        setSuccessMsg("Phone verified successfully! Now complete your account setup.");
+        setSuccessMsg("Phone verified successfully! Now set your account password.");
       } else {
         setErrorMsg(res.message);
       }
     });
   };
 
-  const handleRequestEmailOTP = (e: React.FormEvent) => {
+  const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    if (!email || !password) {
-      setErrorMsg("Email and password are required");
+    if (!password) {
+      setErrorMsg("Password is required");
       return;
     }
 
@@ -112,68 +109,28 @@ export default function SignupPage() {
       return;
     }
 
-    startTransition(async () => {
-      const res = await sendEmailOTPAction(email);
-      if (res.success) {
-        setStep("EMAIL_OTP_INPUT");
-        setResendTimer(60);
-        setSuccessMsg(res.message);
-      } else {
-        setErrorMsg(res.message);
-      }
-    });
-  };
-
-  const handleVerifyEmailAndSignup = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    if (!emailOtp || emailOtp.length < 4) {
-      setErrorMsg("Please enter the email verification code");
-      return;
-    }
-
     const formData = new FormData();
-    formData.append("email", email);
     formData.append("password", password);
-    formData.append("email_code", emailOtp);
 
     startTransition(async () => {
       const res = await signUpAction(formData);
       if (res.success) {
         setSuccessMsg("Account created successfully! Logging you in...");
         
-        // Auto-login after successful registration
+        // Auto-login after successful registration using derived NumID email
+        const derivedEmail = `${phone.replace("+", "")}@numid.us`;
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: derivedEmail,
           password,
         });
 
         if (error) {
           console.error("[SignUp Auto-Login Error]:", error);
           setErrorMsg("Account created but auto-login failed. Please sign in below.");
-          // Fallback to manual login instruction step
           setStep("EMAIL_PENDING");
         } else {
           window.location.href = "/dashboard";
         }
-      } else {
-        setErrorMsg(res.message);
-      }
-    });
-  };
-
-  const handleResendEmailOTP = () => {
-    if (resendTimer > 0) return;
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    startTransition(async () => {
-      const res = await sendEmailOTPAction(email);
-      if (res.success) {
-        setResendTimer(60);
-        setSuccessMsg("Verification email resent. Check your inbox.");
       } else {
         setErrorMsg(res.message);
       }
@@ -232,11 +189,7 @@ export default function SignupPage() {
             </span>
             <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
             <span className={step === "ACCOUNT_DETAILS" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
-              <span className="hidden sm:inline">3. </span>Details
-            </span>
-            <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
-            <span className={step === "EMAIL_OTP_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
-              <span className="hidden sm:inline">4. </span>Email
+              <span className="hidden sm:inline">3. </span>Password
             </span>
           </div>
         )}
@@ -287,7 +240,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 flex items-center justify-center space-x-2 group"
+              className="w-full bg-indigo-600 hover:bg-indigo-505 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 flex items-center justify-center space-x-2 group"
             >
               {isPending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -315,7 +268,7 @@ export default function SignupPage() {
             
             <div className="text-left">
               <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Verify your phone</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">We've sent a 6-digit code to <span className="text-slate-900 dark:text-white font-mono">{phone}</span>.</p>
+              <p className="text-xs text-slate-505 dark:text-slate-400">We've sent a 6-digit code to <span className="text-slate-900 dark:text-white font-mono">{phone}</span>.</p>
             </div>
 
             <div className="relative">
@@ -339,7 +292,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center space-x-2"
+              className="w-full bg-indigo-600 hover:bg-indigo-505 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center space-x-2"
             >
               {isPending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -365,37 +318,35 @@ export default function SignupPage() {
           </form>
         )}
 
-        {/* STEP 3: Email / password details */}
+        {/* STEP 3: Create account with password */}
         {step === "ACCOUNT_DETAILS" && (
-          <form onSubmit={handleRequestEmailOTP} className="space-y-6">
+          <form onSubmit={handleSignup} className="space-y-6">
             <div className="text-left">
               <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Create your account</h2>
-              <p className="text-xs text-slate-505 dark:text-slate-400">Your public NumID will be <span className="text-indigo-650 dark:text-indigo-400 font-mono font-bold">{phone.replace("+", "")}@numid.us</span>. Enter details to finish signup.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Your phone has been verified. Now set a password to secure your account.</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Destination Email</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Username (NumID Email)</label>
                 <div className="relative flex items-center">
                   <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
                     <Mail className="w-5 h-5" />
                   </div>
                   <input
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
-                    required
+                    type="text"
+                    value={`${phone.replace("+", "")}@numid.us`}
+                    readOnly
+                    className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-500 dark:text-slate-405 focus:outline-none cursor-not-allowed font-mono"
                   />
                 </div>
                 <span className="text-[10px] text-slate-500 block mt-1.5 leading-relaxed">
-                  Incoming mail to your NumID will be forwarded here.
+                  This is your permanent public identity, which remains read-only.
                 </span>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Password</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Create Password</label>
                 <div className="relative flex items-center">
                   <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
                     <Lock className="w-5 h-5" />
@@ -421,7 +372,7 @@ export default function SignupPage() {
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  <span>Verify Email Address</span>
+                  <span>Create Account</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -429,71 +380,7 @@ export default function SignupPage() {
           </form>
         )}
 
-        {/* STEP 4: Email OTP verification code input */}
-        {step === "EMAIL_OTP_INPUT" && (
-          <form onSubmit={handleVerifyEmailAndSignup} className="space-y-6">
-            <div className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer text-xs font-semibold mb-2" onClick={() => setStep("ACCOUNT_DETAILS")}>
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Change email / password</span>
-            </div>
-            
-            <div className="text-left">
-              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Verify your email</h2>
-              <p className="text-xs text-slate-505 dark:text-slate-400">We've sent a 6-digit verification code to <span className="text-slate-900 dark:text-white font-mono">{email}</span>.</p>
-            </div>
-
-            <div className="relative">
-              <label className="text-xs font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Enter Code</label>
-              <div className="relative flex items-center">
-                <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="123456"
-                  maxLength={6}
-                  value={emailOtp}
-                  onChange={(e) => setEmailOtp(e.target.value)}
-                  className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono tracking-widest text-center text-lg font-bold"
-                  required
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isPending}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center space-x-2"
-            >
-              {isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <span>Verify Email & Signup</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-
-            <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400 pt-2">
-              <span>Didn't receive code?</span>
-              <button
-                type="button"
-                onClick={handleResendEmailOTP}
-                disabled={resendTimer > 0 || isPending}
-                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold disabled:text-slate-400 dark:disabled:text-slate-600 transition-colors"
-              >
-                {resendTimer > 0 ? `Resend Code (${resendTimer}s)` : "Resend Code"}
-              </button>
-            </div>
-            
-            <div className="bg-slate-105 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 rounded-xl p-3.5 text-[11px] text-slate-655 dark:text-slate-400 transition-colors">
-              <span className="font-bold text-indigo-600 dark:text-indigo-400">💡 Local Sandbox Tip:</span> If Twilio keys are not set, check the server log for the code. Alternatively, use standard test code <code className="font-mono text-slate-800 dark:text-white bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">123456</code> to verify instantly.
-            </div>
-          </form>
-        )}
-
-        {/* STEP 5: Email pending / fallback error instruction screen */}
+        {/* STEP 4: Email pending fallback screen */}
         {step === "EMAIL_PENDING" && (
           <div className="space-y-6 text-center">
             <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 mx-auto flex items-center justify-center text-indigo-600 dark:text-indigo-400 animate-bounce">
@@ -520,7 +407,7 @@ export default function SignupPage() {
       
       {/* Footer support */}
       <div className="mt-8 text-xs text-slate-500 text-center">
-        Already have an account? <Link href="/dashboard" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold transition-colors">Sign In</Link>
+        Already have an account? <Link href="/dashboard" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-505 dark:hover:text-indigo-300 font-semibold transition-colors">Sign In</Link>
       </div>
 
     </div>

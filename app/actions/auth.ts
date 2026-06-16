@@ -131,16 +131,10 @@ export async function verifyPhoneOTPAction(phone: string, code: string) {
  */
 export async function signUpAction(formData: FormData) {
   try {
-    const email = formData.get("email") as string;
     const password = formData.get("password") as string;
-    const emailCode = formData.get("email_code") as string;
     
-    if (!email || !password) {
-      return { success: false, message: "Email and password are required" };
-    }
-
-    if (!emailCode) {
-      return { success: false, message: "Email verification code is required" };
+    if (!password) {
+      return { success: false, message: "Password is required" };
     }
 
     const cookieStore = await cookies();
@@ -156,18 +150,13 @@ export async function signUpAction(formData: FormData) {
       return { success: false, message: "Phone verification expired. Please verify your phone again." };
     }
 
-    // Verify the email OTP code using Twilio Verify
-    const emailVerifyRes = await checkEmailVerification(email, emailCode);
-    if (!emailVerifyRes.success) {
-      return { success: false, message: "Invalid or expired email verification code" };
-    }
-
+    const numidEmail = `${verifiedPhone.replace("+", "")}@numid.us`;
     const supabase = await createClient();
     
     // Sign up using Supabase Auth
     // Pass the phone number in metadata so trigger handle_new_user picks it up
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: numidEmail,
       password,
       options: {
         emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`,
@@ -208,23 +197,11 @@ export async function signUpAction(formData: FormData) {
       console.error("[SignUpAction] Error updating phone_verified status:", updateError);
     }
 
-    // Register destination email address to Cloudflare routing immediately
-    try {
-      await addDestinationAddress(email);
-    } catch (cfErr: any) {
-      console.error("[SignUpAction] Failed to register destination email in Cloudflare:", cfErr);
-    }
-
     // Log the successful verification into public.verification_logs
     await adminClient.from("verification_logs").insert([
       {
         user_id: data.user.id,
         type: "sms",
-        status: "verified",
-      },
-      {
-        user_id: data.user.id,
-        type: "email",
         status: "verified",
       }
     ]);
@@ -235,7 +212,7 @@ export async function signUpAction(formData: FormData) {
 
     return { 
       success: true, 
-      message: "Signup successful! Your email and phone number have been verified. You can now access your dashboard." 
+      message: "Signup successful! Your phone number has been verified. You can now access your dashboard." 
     };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to complete signup" };
