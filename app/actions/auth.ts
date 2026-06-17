@@ -9,7 +9,7 @@ import {
   formatPhoneNumber
 } from "@/lib/twilio-verify";
 import { addDestinationAddress } from "@/lib/cloudflare-routing";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 // Simple global memory rate limiter for development/production fallback
 if (typeof globalThis !== "undefined") {
@@ -198,6 +198,13 @@ export async function signUpAction(formData: FormData) {
       console.error("[SignUpAction] Error updating phone_verified status:", updateError);
     }
 
+    // Audit Log for signup
+    await adminClient.from("audit_logs").insert({
+      user_id: data.user.id,
+      action: "signup_success",
+      metadata: { phone_number: verifiedPhone, email: numidEmail }
+    });
+
     // Log the successful verification into public.verification_logs
     await adminClient.from("verification_logs").insert([
       {
@@ -355,5 +362,32 @@ export async function resetPasswordWithOTPAction(phoneOrEmail: string, code: str
     };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to reset password." };
+  }
+}
+
+/**
+ * Action: Logs successful user sign-in to audit_logs
+ */
+export async function logSignInAction() {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, message: "No active user session" };
+
+    const adminClient = createAdminClient();
+    const reqHeaders = await headers();
+    const userAgent = reqHeaders.get("user-agent") || "unknown";
+    const ip = reqHeaders.get("x-forwarded-for") || "unknown";
+
+    await adminClient.from("audit_logs").insert({
+      user_id: user.id,
+      action: "login_success",
+      metadata: { user_agent: userAgent, ip }
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("[logSignInAction] Unexpected error:", error);
+    return { success: false, message: error.message || "Failed to log sign-in" };
   }
 }

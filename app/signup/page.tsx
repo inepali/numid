@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { 
   sendPhoneOTPAction, 
   verifyPhoneOTPAction, 
-  signUpAction 
+  signUpAction,
+  logSignInAction
 } from "@/app/actions/auth";
 import { createBrowserClient } from "@supabase/ssr";
 import ThemeToggle from "@/app/components/ThemeToggle";
@@ -129,6 +130,8 @@ export default function SignupPage() {
           setErrorMsg("Account created but auto-login failed. Please sign in below.");
           setStep("EMAIL_PENDING");
         } else {
+          // Log auto-login success to audit logs
+          await logSignInAction().catch(err => console.error("Failed to log sign-in:", err));
           window.location.href = "/dashboard";
         }
       } else {

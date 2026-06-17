@@ -17,6 +17,7 @@ import {
   saveDestinationEmailAction,
   uploadAvatarAction,
 } from "@/app/actions/dashboard";
+import { logSignInAction } from "@/app/actions/auth";
 import { 
   Mail, 
   ShieldAlert, 
@@ -276,6 +277,8 @@ export default function DashboardPage() {
       if (error) {
         setLoginError(error.message);
       } else {
+        // Log sign-in to audit logs
+        await logSignInAction().catch(err => console.error("Failed to log sign-in:", err));
         await loadData();
       }
     } catch (err: any) {

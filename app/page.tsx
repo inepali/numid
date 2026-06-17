@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { createBrowserClient } from "@supabase/ssr";
+import { logSignInAction } from "@/app/actions/auth";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import { 
   Phone, 
@@ -87,6 +88,8 @@ export default function LandingPage() {
         setLoginError(error.message || "Invalid email or password.");
       } else {
         setLoginSuccess(true);
+        // Log sign-in to audit logs
+        logSignInAction().catch(err => console.error("Failed to log sign-in:", err));
         setTimeout(() => { window.location.href = "/dashboard"; }, 800);
       }
     } catch (err: any) {

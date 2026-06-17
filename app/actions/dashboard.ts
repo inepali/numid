@@ -127,7 +127,7 @@ export async function getDashboardData() {
     }
 
     // Fetch audit logs
-    const { data: auditLogs } = await supabase
+    const { data: auditLogs } = await adminClient
       .from("audit_logs")
       .select("*")
       .eq("user_id", user.id)
@@ -162,6 +162,14 @@ export async function sendNewEmailOTPAction(newEmail: string) {
     }
 
     const res = await sendEmailVerification(newEmail);
+    if (res.success) {
+      const adminClient = createAdminClient();
+      await adminClient.from("audit_logs").insert({
+        user_id: user.id,
+        action: "request_destination_email_change",
+        metadata: { requested_email: newEmail }
+      });
+    }
     return res;
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to send email OTP" };
