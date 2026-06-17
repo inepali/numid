@@ -30,7 +30,7 @@ export async function GET(
       return new NextResponse("Avatar not found", { status: 404 });
     }
 
-    const key = `${userProfile.numid_address}.jpg`;
+    const key = userProfile.numid_address;
     const isMock = !process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || !process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
 
     let buffer: Buffer;
@@ -58,11 +58,23 @@ export async function GET(
       }
     }
 
+    // Detect mime type dynamically from buffer magic bytes
+    let mimeType = "image/jpeg";
+    if (buffer.length >= 3 && buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+      mimeType = "image/jpeg";
+    } else if (buffer.length >= 8 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+      mimeType = "image/png";
+    } else if (buffer.length >= 4 && buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
+      mimeType = "image/gif";
+    } else if (buffer.length >= 12 && buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+      mimeType = "image/webp";
+    }
+
     // Return the avatar image
     const response = new NextResponse(buffer, {
       status: 200,
       headers: {
-        "Content-Type": "image/jpeg",
+        "Content-Type": mimeType,
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
