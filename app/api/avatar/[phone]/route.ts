@@ -37,7 +37,11 @@ export async function GET(
 
     if (isMock) {
       // Local Mock Mode: read from scratch/avatars
-      const filePath = path.join(process.cwd(), "scratch", "avatars", key);
+      const os = require("os");
+      const dirPath = (process.env.VERCEL || process.env.LAMBDA_TASK_ROOT)
+        ? path.join(os.tmpdir(), "scratch", "avatars")
+        : path.join(process.cwd(), "scratch", "avatars");
+      const filePath = path.join(dirPath, key);
       try {
         buffer = await fs.readFile(filePath);
       } catch (e) {

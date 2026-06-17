@@ -756,10 +756,13 @@ export async function uploadAvatarAction(formData: FormData) {
       // Local Mock Mode: write to scratch/avatars
       const fs = require("fs/promises");
       const path = require("path");
-      const dirPath = path.join(process.cwd(), "scratch", "avatars");
+      const os = require("os");
+      const dirPath = (process.env.VERCEL || process.env.LAMBDA_TASK_ROOT)
+        ? path.join(os.tmpdir(), "scratch", "avatars")
+        : path.join(process.cwd(), "scratch", "avatars");
       await fs.mkdir(dirPath, { recursive: true });
       await fs.writeFile(path.join(dirPath, key), buffer);
-      console.log(`[R2 MOCK] Saved avatar locally: scratch/avatars/${key}`);
+      console.log(`[R2 MOCK] Saved avatar locally: ${dirPath}/${key}`);
     } else {
       // Live Mode: upload to Cloudflare R2
       const { uploadToR2 } = await import("@/lib/r2");
