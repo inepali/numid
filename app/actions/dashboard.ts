@@ -608,7 +608,7 @@ export async function provisionCloudflareRouteAction() {
 /**
  * Action: Update social profiles for the authenticated user
  */
-export async function updateSocialProfilesAction(profiles: Record<string, string>) {
+export async function updateSocialProfilesAction(profiles: Record<string, string>, firstName?: string, lastName?: string) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -626,12 +626,22 @@ export async function updateSocialProfilesAction(profiles: Record<string, string
     }
 
     const adminClient = createAdminClient();
+    
+    const updateData: Record<string, any> = {
+      social_profiles: sanitizedProfiles,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (firstName !== undefined) {
+      updateData.first_name = firstName.trim() || null;
+    }
+    if (lastName !== undefined) {
+      updateData.last_name = lastName.trim() || null;
+    }
+
     const { error: dbError } = await adminClient
       .from("users")
-      .update({
-        social_profiles: sanitizedProfiles,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", user.id);
 
     if (dbError) {
@@ -645,15 +655,19 @@ export async function updateSocialProfilesAction(profiles: Record<string, string
     await adminClient.from("audit_logs").insert({
       user_id: user.id,
       action: "update_social_profiles",
-      metadata: { count: Object.keys(sanitizedProfiles).length },
+      metadata: { 
+        count: Object.keys(sanitizedProfiles).length,
+        first_name: firstName !== undefined ? (firstName.trim() || null) : null,
+        last_name: lastName !== undefined ? (lastName.trim() || null) : null,
+      },
     });
 
     return {
       success: true,
-      message: "Public profile social links updated successfully!",
+      message: "Public profile details updated successfully!",
     };
   } catch (error: any) {
-    return { success: false, message: error.message || "Failed to update social profiles" };
+    return { success: false, message: error.message || "Failed to update public profile details" };
   }
 }
 

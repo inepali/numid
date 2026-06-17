@@ -23,7 +23,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
   
   const { data: userProfile } = await adminClient
     .from("users")
-    .select("phone_number, numid_address, social_profiles, status, email_verified, phone_verified, avatar_url, avatar_updated_at")
+    .select("phone_number, numid_address, social_profiles, status, email_verified, phone_verified, avatar_url, avatar_updated_at, first_name, last_name")
     .eq("status", "active")
     .or(`phone_number.eq.${cleanPhone},phone_number.eq.+${cleanPhone},numid_address.eq.${cleanPhone}@numid.us`)
     .maybeSingle();

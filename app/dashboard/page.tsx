@@ -144,6 +144,8 @@ export default function DashboardPage() {
   // Social Profile States
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
   const [activeProfileTab, setActiveProfileTab] = useState<ProfileCategoryKey>("socials");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
 
   // Dialog & Form States
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -241,14 +243,24 @@ export default function DashboardPage() {
     }
     const notesStr = notesArr.join("\\n");
 
+    const fullName = [firstName, lastName].filter(Boolean).join(" ");
     const vcardLines = [
       "BEGIN:VCARD",
       "VERSION:3.0",
-      `FN:${profile.numid_address}`,
+    ];
+
+    if (fullName) {
+      vcardLines.push(`FN:${fullName}`);
+      vcardLines.push(`N:${lastName || ""};${firstName || ""};;;`);
+    } else {
+      vcardLines.push(`FN:${profile.numid_address}`);
+    }
+
+    vcardLines.push(
       `TEL;TYPE=CELL,VOICE:${formattedPhone}`,
       `EMAIL;TYPE=PREF,INTERNET:${profile.numid_address}`,
-      `URL:${profileUrl}`,
-    ];
+      `URL:${profileUrl}`
+    );
 
     if (profile.avatar_url) {
       vcardLines.push(`PHOTO;VALUE=URI;TYPE=JPEG:${profile.avatar_url}`);
@@ -305,6 +317,8 @@ export default function DashboardPage() {
     if (res.success) {
       setProfile(res.profile);
       setSocialLinks(res.profile?.social_profiles || {});
+      setFirstName(res.profile?.first_name || "");
+      setLastName(res.profile?.last_name || "");
       setAuditLogs(res.auditLogs || []);
       if (res.message) {
         setSuccessMsg(res.message);
@@ -495,7 +509,7 @@ export default function DashboardPage() {
     setSuccessMsg(null);
 
     startTransition(async () => {
-      const res = await updateSocialProfilesAction(socialLinks);
+      const res = await updateSocialProfilesAction(socialLinks, firstName, lastName);
       if (res.success) {
         setSuccessMsg(res.message);
         await loadData();
@@ -1016,8 +1030,32 @@ export default function DashboardPage() {
                     className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-555 active:bg-indigo-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
                   >
                     {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                    <span>Save Profile Links</span>
+                    <span>Save Profile</span>
                   </button>
+                </div>
+              </div>
+
+              {/* Optional Name fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 border-b border-slate-200 dark:border-white/5">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-450 block mb-2 uppercase tracking-wide">First Name (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. John"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full bg-slate-55 dark:bg-slate-900/60 border border-slate-205 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-450 block mb-2 uppercase tracking-wide">Last Name (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Doe"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full bg-slate-55 dark:bg-slate-900/60 border border-slate-205 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:outline-none"
+                  />
                 </div>
               </div>
 
