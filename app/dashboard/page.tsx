@@ -228,6 +228,66 @@ export default function DashboardPage() {
     }
   };
 
+  const handleShareContact = async () => {
+    if (!profile) return;
+    const formattedPhone = profile.phone_number;
+    const notesArr: string[] = ["NumID Verified Profile"];
+    if (socialLinks) {
+      Object.entries(socialLinks).forEach(([key, val]) => {
+        if (val && val.trim() !== "") {
+          notesArr.push(`${key}: ${val}`);
+        }
+      });
+    }
+    const notesStr = notesArr.join("\\n");
+
+    const vcardLines = [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      `FN:${profile.numid_address}`,
+      `TEL;TYPE=CELL,VOICE:${formattedPhone}`,
+      `EMAIL;TYPE=PREF,INTERNET:${profile.numid_address}`,
+      `URL:${profileUrl}`,
+    ];
+
+    if (profile.avatar_url) {
+      vcardLines.push(`PHOTO;VALUE=URI;TYPE=JPEG:${profile.avatar_url}`);
+    }
+
+    vcardLines.push(`NOTE:${notesStr}`);
+    vcardLines.push("END:VCARD");
+
+    const vcardText = vcardLines.join("\r\n");
+    const blob = new Blob([vcardText], { type: "text/vcard;charset=utf-8;" });
+    const file = new File([blob], `${profile.phone_number.replace("+", "")}.vcf`, { type: "text/vcard" });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: `${profile.numid_address} Contact`,
+          text: `Add ${profile.numid_address} to contacts`,
+        });
+        return;
+      } catch (err: any) {
+        if (err.name !== "AbortError") {
+          console.error("Web Share failed:", err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    const link = document.createElement("a");
+    const url = window.URL.createObjectURL(blob);
+    link.href = url;
+    link.download = `${profile.phone_number.replace("+", "")}.vcf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
   // Check auth and fetch dashboard data on load
   const loadData = async () => {
     setLoading(true);
@@ -1390,11 +1450,11 @@ export default function DashboardPage() {
             </div>
 
             {/* Link Copy Box */}
-            <div className="w-full flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 rounded-xl px-3.5 py-2 mb-6 text-xs font-mono text-slate-600 dark:text-slate-350">
+            <div className="w-full flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 rounded-xl px-3.5 py-2 mb-6 text-xs font-mono text-slate-655 dark:text-slate-350">
               <span className="truncate flex-1 text-left">{profileUrl}</span>
               <button
                 onClick={handleCopyLink}
-                className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all cursor-pointer shrink-0"
+                className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/5 text-slate-500 hover:text-slate-905 dark:text-slate-400 dark:hover:text-white transition-all cursor-pointer shrink-0"
                 title="Copy Link"
               >
                 {copiedLink ? (
@@ -1404,6 +1464,16 @@ export default function DashboardPage() {
                 )}
               </button>
             </div>
+
+            {/* Share / AirDrop Contact Card */}
+            <button
+              type="button"
+              onClick={handleShareContact}
+              className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-650 hover:from-indigo-500 hover:to-violet-550 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-[0.98]"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Share Contact Card / AirDrop</span>
+            </button>
 
             {/* Actions Footer */}
             <div className="w-full flex gap-3 pt-4 border-t border-slate-200 dark:border-white/5">

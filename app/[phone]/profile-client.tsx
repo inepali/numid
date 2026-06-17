@@ -119,6 +119,65 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const handleShareContact = async () => {
+    const formattedPhone = profile.phone_number;
+    const notesArr: string[] = ["NumID Verified Profile"];
+    if (profile.social_profiles) {
+      Object.entries(profile.social_profiles).forEach(([key, val]) => {
+        if (val && val.trim() !== "") {
+          notesArr.push(`${key}: ${val}`);
+        }
+      });
+    }
+    const notesStr = notesArr.join("\\n");
+
+    const vcardLines = [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      `FN:${profile.numid_address}`,
+      `TEL;TYPE=CELL,VOICE:${formattedPhone}`,
+      `EMAIL;TYPE=PREF,INTERNET:${profile.numid_address}`,
+      `URL:${profileUrl}`,
+    ];
+
+    if (profile.avatar_url) {
+      vcardLines.push(`PHOTO;VALUE=URI;TYPE=JPEG:${profile.avatar_url}`);
+    }
+
+    vcardLines.push(`NOTE:${notesStr}`);
+    vcardLines.push("END:VCARD");
+
+    const vcardText = vcardLines.join("\r\n");
+    const blob = new Blob([vcardText], { type: "text/vcard;charset=utf-8;" });
+    const file = new File([blob], `${profile.phone_number.replace("+", "")}.vcf`, { type: "text/vcard" });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: `${profile.numid_address} Contact`,
+          text: `Add ${profile.numid_address} to contacts`,
+        });
+        return;
+      } catch (err: any) {
+        if (err.name !== "AbortError") {
+          console.error("Web Share failed:", err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    const link = document.createElement("a");
+    const url = window.URL.createObjectURL(blob);
+    link.href = url;
+    link.download = `${profile.phone_number.replace("+", "")}.vcf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleDownloadQR = async () => {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(profileUrl)}`;
     try {
@@ -200,6 +259,15 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
         </div>
+
+        {/* Share/AirDrop Contact Card */}
+        <button
+          onClick={handleShareContact}
+          className="mt-3.5 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-[0.98] text-white text-xs font-bold py-3.5 px-4 rounded-2xl transition-all shadow-md flex items-center justify-center space-x-2"
+        >
+          <Share2 className="w-4 h-4" />
+          <span>Save Contact / AirDrop</span>
+        </button>
 
         {/* Dynamic Category Tabs */}
         {availableGroups.length > 1 && (
