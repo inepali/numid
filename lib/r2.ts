@@ -45,6 +45,10 @@ export async function getFromR2(key: string): Promise<Buffer> {
     throw new Error("No body returned from R2");
   }
 
-  const byteArray = await response.Body.transformToByteArray();
-  return Buffer.from(byteArray);
+  // Universal stream-to-buffer concatenation
+  const chunks: any[] = [];
+  for await (const chunk of response.Body as any) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
 }

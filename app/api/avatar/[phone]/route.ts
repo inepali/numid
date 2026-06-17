@@ -18,12 +18,12 @@ export async function GET(
       return new NextResponse("Invalid phone number", { status: 400 });
     }
 
-    // Look up the user by phone number to get their numid_address
+    // Look up the user by phone number or NumID address to get their numid_address
     const adminClient = createAdminClient();
     const { data: userProfile } = await adminClient
       .from("users")
       .select("numid_address, avatar_updated_at")
-      .or(`phone_number.eq.${cleanPhone},phone_number.eq.+${cleanPhone}`)
+      .or(`phone_number.eq.${cleanPhone},phone_number.eq.+${cleanPhone},numid_address.eq.${cleanPhone}@numid.us,numid_address.eq.${cleanPhone}@numid.dev`)
       .maybeSingle();
 
     if (!userProfile || !userProfile.avatar_updated_at) {

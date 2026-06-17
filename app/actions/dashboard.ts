@@ -762,10 +762,11 @@ export async function uploadAvatarAction(formData: FormData) {
         : path.join(process.cwd(), "scratch", "avatars");
       await fs.mkdir(dirPath, { recursive: true });
       await fs.writeFile(path.join(dirPath, key), buffer);
-      console.log(`[R2 MOCK] Saved avatar locally: ${dirPath}/${key}`);
+      console.log(`[R2 UPLOAD] Storage Mode: MOCK (Local FS) | Resolved Path: ${dirPath}/${key}`);
     } else {
       // Live Mode: upload to Cloudflare R2
       const { uploadToR2 } = await import("@/lib/r2");
+      console.log(`[R2 UPLOAD] Storage Mode: LIVE (Cloudflare R2) | Bucket: ${process.env.CLOUDFLARE_R2_BUCKET_NAME || "avatars"} | Key: ${key}`);
       await uploadToR2(key, buffer, "image/jpeg");
     }
 
