@@ -23,6 +23,8 @@ interface PublicProfileClientProps {
     social_profiles: Record<string, string>;
     avatar_url?: string;
     avatar_updated_at?: string;
+    first_name?: string;
+    last_name?: string;
   };
 }
 
@@ -92,6 +94,8 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
   const [showQRModal, setShowQRModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
+
   // Check which tabs have active links
   const availableGroups = CATEGORY_GROUPS.filter(group => 
     group.keys.some(k => profile.social_profiles?.[k] !== undefined && profile.social_profiles[k].trim() !== "")
@@ -134,11 +138,20 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
     const vcardLines = [
       "BEGIN:VCARD",
       "VERSION:3.0",
-      `FN:${profile.numid_address}`,
+    ];
+
+    if (fullName) {
+      vcardLines.push(`FN:${fullName}`);
+      vcardLines.push(`N:${profile.last_name || ""};${profile.first_name || ""};;;`);
+    } else {
+      vcardLines.push(`FN:${profile.numid_address}`);
+    }
+
+    vcardLines.push(
       `TEL;TYPE=CELL,VOICE:${formattedPhone}`,
       `EMAIL;TYPE=PREF,INTERNET:${profile.numid_address}`,
-      `URL:${profileUrl}`,
-    ];
+      `URL:${profileUrl}`
+    );
 
     if (profile.avatar_url) {
       vcardLines.push(`PHOTO;VALUE=URI;TYPE=JPEG:${profile.avatar_url}`);
@@ -241,9 +254,20 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
         </div>
 
         {/* User Identity Info */}
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-          {profile.numid_address}
-        </h1>
+        {fullName ? (
+          <>
+            <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              {fullName}
+            </h1>
+            <p className="text-xs text-indigo-650 dark:text-indigo-400 font-bold uppercase tracking-wider mt-1.5">
+              {profile.numid_address}
+            </p>
+          </>
+        ) : (
+          <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            {profile.numid_address}
+          </h1>
+        )}
         
         {/* Public NumID Address */}
         <div className="mt-3 flex items-center justify-between gap-3 bg-slate-55 dark:bg-slate-900/80 border border-slate-200 dark:border-white/5 rounded-2xl px-4 py-2.5 w-full select-all font-mono text-xs text-indigo-700 dark:text-indigo-300">
@@ -389,7 +413,7 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
                 <span>Verified NumID Identity</span>
               </span>
               <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                {profile.numid_address}
+                {fullName ? `${fullName} (${profile.numid_address})` : profile.numid_address}
               </p>
             </div>
 
