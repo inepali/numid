@@ -748,7 +748,7 @@ export async function uploadAvatarAction(formData: FormData) {
     }
 
     // Store in R2 or Local Storage
-    const isMock = !process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || !process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || process.env.NEXT_PUBLIC_MOCK_APIS === "true";
+    const isMock = !process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || !process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
     
     let avatarUrl = `/api/avatar/${profile.phone_number.replace("+", "")}`;
 

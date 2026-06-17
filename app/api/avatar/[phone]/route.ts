@@ -31,7 +31,7 @@ export async function GET(
     }
 
     const key = `${userProfile.numid_address}.jpg`;
-    const isMock = !process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || !process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || process.env.NEXT_PUBLIC_MOCK_APIS === "true";
+    const isMock = !process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || !process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
 
     let buffer: Buffer;
 
