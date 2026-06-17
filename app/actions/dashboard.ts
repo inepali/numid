@@ -724,9 +724,9 @@ export async function uploadAvatarAction(formData: FormData) {
       return { success: false, message: "No file provided" };
     }
 
-    // Validation: Only jpeg files allowed
-    if (file.type !== "image/jpeg" && file.type !== "image/jpg") {
-      return { success: false, message: "Only JPEG files are allowed." };
+    // Validation: Only image files allowed
+    if (!file.type.startsWith("image/")) {
+      return { success: false, message: "Only image files are allowed." };
     }
 
     // Size limit: 2MB
@@ -745,15 +745,26 @@ export async function uploadAvatarAction(formData: FormData) {
       return { success: false, message: "Profile not found" };
     }
 
-    // Rename image to numid email (e.g. 1234567890@numid.us.jpg)
-    const key = `${profile.numid_address}.jpg`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Validate that the file header corresponds to JPEG/JFIF
-    // JPEG magic bytes: FF D8 FF
-    if (buffer.length < 3 || buffer[0] !== 0xFF || buffer[1] !== 0xD8 || buffer[2] !== 0xFF) {
-      return { success: false, message: "Invalid image format. Only real JPEG files are allowed." };
+    // Validate magic bytes for JPEG, PNG, GIF, WebP
+    let mimeType = "";
+    if (buffer.length >= 3 && buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+      mimeType = "image/jpeg";
+    } else if (buffer.length >= 8 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+      mimeType = "image/png";
+    } else if (buffer.length >= 4 && buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
+      mimeType = "image/gif";
+    } else if (buffer.length >= 12 && buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+      mimeType = "image/webp";
     }
+
+    if (!mimeType) {
+      return { success: false, message: "Unsupported image format. Please upload a JPEG, PNG, WebP, or GIF." };
+    }
+
+    // Rename image to numid email (store without extension)
+    const key = profile.numid_address;
 
     // Store in R2 or Local Storage
     const isMock = !process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || !process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
@@ -775,7 +786,7 @@ export async function uploadAvatarAction(formData: FormData) {
       // Live Mode: upload to Cloudflare R2
       const { uploadToR2 } = await import("@/lib/r2");
       console.log(`[R2 UPLOAD] Storage Mode: LIVE (Cloudflare R2) | Bucket: ${process.env.CLOUDFLARE_R2_BUCKET_NAME || "avatars"} | Key: ${key}`);
-      await uploadToR2(key, buffer, "image/jpeg");
+      await uploadToR2(key, buffer, mimeType);
     }
 
     const updatedAt = new Date().toISOString();

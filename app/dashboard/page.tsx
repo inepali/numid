@@ -304,9 +304,9 @@ export default function DashboardPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Client-side validation: JPEG/JPG only
-    if (file.type !== "image/jpeg" && file.type !== "image/jpg") {
-      setErrorMsg("Only JPEG files are allowed.");
+    // Client-side validation: image files only
+    if (!file.type.startsWith("image/")) {
+      setErrorMsg("Only image files are allowed.");
       return;
     }
 
@@ -790,7 +790,7 @@ export default function DashboardPage() {
                         type="file"
                         ref={fileInputRef}
                         onChange={handleAvatarChange}
-                        accept="image/jpeg, image/jpg"
+                        accept="image/*"
                         className="hidden"
                       />
 
