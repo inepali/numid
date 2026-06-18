@@ -108,6 +108,16 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // Open login modal if query param is set
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("login") === "true") {
+        openLogin();
+      }
+    }
+  }, []);
+
   // Close modal on Escape key
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") closeLogin(); };

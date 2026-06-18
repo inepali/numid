@@ -201,7 +201,18 @@ export default function SignupPage() {
         {errorMsg && (
           <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300 text-xs flex items-start space-x-2.5 animate-fadeIn">
             <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0 mt-0.5" />
-            <span>{errorMsg}</span>
+            <span>
+              {errorMsg === "Account already exists, please use login instead" ? (
+                <>
+                  Account already exists, please{" "}
+                  <Link href="/?login=true" className="underline font-semibold text-red-800 dark:text-red-200 hover:text-red-950 dark:hover:text-white transition-colors">
+                    use login instead
+                  </Link>
+                </>
+              ) : (
+                errorMsg
+              )}
+            </span>
           </div>
         )}
 
