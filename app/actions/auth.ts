@@ -51,6 +51,18 @@ export async function sendPhoneOTPAction(phone: string) {
       return { success: false, message: "Please enter a valid phone number" };
     }
 
+    const formattedPhone = formatPhoneNumber(phone);
+    const adminClient = createAdminClient();
+    const { data: existingUser } = await adminClient
+      .from("users")
+      .select("id")
+      .eq("phone_number", formattedPhone)
+      .maybeSingle();
+
+    if (existingUser) {
+      return { success: false, message: "Account already exists, please use login instead" };
+    }
+
     // Rate Limiting (5 requests per hour)
     const rateLimit = checkRateLimit(phone.trim());
     if (!rateLimit.allowed) {
