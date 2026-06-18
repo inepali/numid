@@ -295,7 +295,7 @@ export default function LandingPage() {
         </h1>
         
         <p className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Never change your public email address again. Forward emails sent to your phone number at <span className="text-slate-900 dark:text-white font-medium">numid.us</span> to any destination. Fast, private, and memorable.
+          Never change your public email address again. Forward emails sent to <span className="text-slate-900 dark:text-white font-medium">5154146054@numid.us</span> to any destination. Fast, private, and memorable.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 sm:mb-20">
