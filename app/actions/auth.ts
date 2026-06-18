@@ -51,12 +51,13 @@ export async function sendPhoneOTPAction(phone: string) {
       return { success: false, message: "Please enter a valid phone number" };
     }
 
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
     const formattedPhone = formatPhoneNumber(phone);
     const adminClient = createAdminClient();
     const { data: existingUser } = await adminClient
       .from("users")
       .select("id")
-      .eq("phone_number", formattedPhone)
+      .or(`phone_number.eq.${cleanPhone},phone_number.eq.${formattedPhone},phone_number.eq.+${cleanPhone}`)
       .maybeSingle();
 
     if (existingUser) {
@@ -119,8 +120,9 @@ export async function verifyPhoneOTPAction(phone: string, code: string) {
     const res = await checkSMSVerification(phone, code);
     if (res.success) {
       const cookieStore = await cookies();
+      const formattedPhone = formatPhoneNumber(phone);
       // Set an HTTP-only temporary verification cookie valid for 15 minutes
-      cookieStore.set("numid_verified_phone", phone, {
+      cookieStore.set("numid_verified_phone", formattedPhone, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         maxAge: 15 * 60, // 15 mins
