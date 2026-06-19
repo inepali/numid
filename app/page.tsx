@@ -533,7 +533,7 @@ export default function LandingPage() {
               <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-300">
                 <li className="flex items-center space-x-3">
                   <Check className="w-4 h-4 text-emerald-605 dark:text-emerald-400 shrink-0" />
-                  <span>1 NumID Address (phone@numid.us)</span>
+                  <span>1 NumID Address (5154146054@numid.us)</span>
                 </li>
                 <li className="flex items-center space-x-3">
                   <Check className="w-4 h-4 text-emerald-605 dark:text-emerald-400 shrink-0" />
