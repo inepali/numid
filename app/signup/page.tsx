@@ -9,6 +9,7 @@ import {
   signUpAction,
   logSignInAction
 } from "@/app/actions/auth";
+import { verifyInvitationAction } from "@/app/actions/invitations";
 import { createBrowserClient } from "@supabase/ssr";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import { 
@@ -22,7 +23,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 
-type SetupStep = "PHONE_INPUT" | "OTP_INPUT" | "ACCOUNT_DETAILS" | "EMAIL_PENDING";
+type SetupStep = "INVITE_INPUT" | "PHONE_INPUT" | "OTP_INPUT" | "ACCOUNT_DETAILS" | "EMAIL_PENDING";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mock-supabase.supabase.co";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-anon-key";
@@ -30,10 +31,13 @@ const supabase = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function SignupPage() {
   const router = useRouter();
-  const [step, setStep] = useState<SetupStep>("PHONE_INPUT");
+  const [step, setStep] = useState<SetupStep>("INVITE_INPUT");
   const [isPending, startTransition] = useTransition();
 
   // Form states
+  const [inviteId, setInviteId] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
@@ -52,6 +56,50 @@ export default function SignupPage() {
     }
   }, [resendTimer]);
 
+  // Check URL query parameters for invite code on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("invite");
+    if (code) {
+      setInviteId(code);
+      handleVerifyInvite(code);
+    } else {
+      setStep("INVITE_INPUT");
+    }
+  }, []);
+
+  const handleVerifyInvite = async (code: string) => {
+    setInviteLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const res = await verifyInvitationAction(code);
+      if (res.success && res.invite) {
+        setPhone(res.invite.phone_number);
+        setInviteEmail(res.invite.email);
+        setSuccessMsg("Invitation verified! Please confirm your phone number.");
+        setStep("PHONE_INPUT");
+      } else {
+        setErrorMsg(res.message || "Invalid or expired invitation.");
+        setStep("INVITE_INPUT");
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to verify invitation.");
+      setStep("INVITE_INPUT");
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const handleVerifyInviteCodeForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteId.trim()) {
+      setErrorMsg("Please enter an invitation code.");
+      return;
+    }
+    handleVerifyInvite(inviteId.trim());
+  };
+
   const handleSendOTP = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -59,6 +107,13 @@ export default function SignupPage() {
 
     if (!phone || phone.trim().length < 8) {
       setErrorMsg("Please enter a valid phone number (e.g. +15154146054)");
+      return;
+    }
+
+    const skipOtp = process.env.NEXT_PUBLIC_SKIP_PHONE_OTP === "true";
+    if (skipOtp) {
+      setStep("ACCOUNT_DETAILS");
+      setSuccessMsg("Phone number confirmed! Please create a password.");
       return;
     }
 
@@ -112,6 +167,7 @@ export default function SignupPage() {
 
     const formData = new FormData();
     formData.append("password", password);
+    formData.append("inviteId", inviteId);
 
     startTransition(async () => {
       const res = await signUpAction(formData);
@@ -181,19 +237,33 @@ export default function SignupPage() {
       <div className="w-full max-w-md bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl dark:shadow-none relative transition-colors duration-300">
         
         {/* Step Indicator */}
-        {step !== "EMAIL_PENDING" && (
+        {step !== "EMAIL_PENDING" && step !== "INVITE_INPUT" && (
           <div className="flex justify-between items-center mb-8 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            <span className={step === "PHONE_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
-              <span className="hidden sm:inline">1. </span>Phone
-            </span>
-            <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
-            <span className={step === "OTP_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
-              <span className="hidden sm:inline">2. </span>SMS
-            </span>
-            <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
-            <span className={step === "ACCOUNT_DETAILS" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
-              <span className="hidden sm:inline">3. </span>Password
-            </span>
+            {process.env.NEXT_PUBLIC_SKIP_PHONE_OTP === "true" ? (
+              <>
+                <span className={step === "PHONE_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
+                  <span className="hidden sm:inline">1. </span>Confirm
+                </span>
+                <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
+                <span className={step === "ACCOUNT_DETAILS" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
+                  <span className="hidden sm:inline">2. </span>Password
+                </span>
+              </>
+            ) : (
+              <>
+                <span className={step === "PHONE_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
+                  <span className="hidden sm:inline">1. </span>Phone
+                </span>
+                <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
+                <span className={step === "OTP_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
+                  <span className="hidden sm:inline">2. </span>SMS
+                </span>
+                <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
+                <span className={step === "ACCOUNT_DETAILS" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
+                  <span className="hidden sm:inline">3. </span>Password
+                </span>
+              </>
+            )}
           </div>
         )}
 
@@ -223,18 +293,75 @@ export default function SignupPage() {
           </div>
         )}
 
+        {/* STEP 0: Invite input */}
+        {step === "INVITE_INPUT" && (
+          <form onSubmit={handleVerifyInviteCodeForm} className="space-y-6">
+            <div className="text-left">
+              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Invitation Only</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-normal leading-relaxed">
+                NumID is currently invite-only. Enter your invitation code or paste your full invitation link to proceed.
+              </p>
+            </div>
+
+            <div className="relative">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Invitation Code / Link</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Paste your code or invite link here"
+                  value={inviteId}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    if (val.includes("invite=")) {
+                      const matches = val.match(/invite=([^&]+)/);
+                      if (matches && matches[1]) {
+                        val = matches[1];
+                      }
+                    }
+                    setInviteId(val);
+                  }}
+                  className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono"
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={inviteLoading}
+              className="w-full bg-indigo-600 hover:bg-indigo-550 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 flex items-center justify-center space-x-2 group"
+            >
+              {inviteLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <span>Verify Invitation Code</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+        )}
+
         {/* STEP 1: Phone input */}
         {step === "PHONE_INPUT" && (
           <form onSubmit={handleSendOTP} className="space-y-6">
             <div className="text-left">
               <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Claim your NumID</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Enter your phone number to begin. We'll send an SMS code to verify ownership.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {process.env.NEXT_PUBLIC_SKIP_PHONE_OTP === "true"
+                  ? "Please confirm your phone number to complete account setup."
+                  : "Please verify your phone number to begin. We'll send an SMS code to verify ownership."}
+              </p>
             </div>
 
             <div className="relative">
               <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Phone Number</label>
               <div className="relative flex items-center">
-                <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
+                <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
                   <Smartphone className="w-5 h-5" />
                 </div>
                 <input
@@ -242,33 +369,46 @@ export default function SignupPage() {
                   placeholder="+15154146054"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono"
+                  readOnly={!!inviteId}
+                  className={`w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono ${
+                    inviteId ? "bg-slate-100 dark:bg-slate-900/60 cursor-not-allowed text-slate-500" : ""
+                  }`}
                   required
                 />
               </div>
               <span className="text-[10px] text-slate-500 block mt-1.5 leading-relaxed">
-                Include country code (e.g., +1 for USA). Rate limit: 5 requests per hour.
+                This is the phone number associated with your invitation.
               </span>
             </div>
 
             <button
               type="submit"
               disabled={isPending}
-              className="w-full bg-indigo-600 hover:bg-indigo-505 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 flex items-center justify-center space-x-2 group"
+              className="w-full bg-indigo-600 hover:bg-indigo-550 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 flex items-center justify-center space-x-2 group"
             >
               {isPending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  <span>Send Verification OTP</span>
+                  <span>
+                    {process.env.NEXT_PUBLIC_SKIP_PHONE_OTP === "true"
+                      ? "Confirm & Set Password"
+                      : "Send Verification OTP"}
+                  </span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
 
-            <div className="bg-slate-105 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 rounded-xl p-3.5 text-[11px] text-slate-600 dark:text-slate-400 transition-colors">
-              <span className="font-bold text-indigo-650 dark:text-indigo-400">💡 Local Sandbox Tip:</span> If Twilio keys are not set, a mock code will print to the server log. Alternatively, use standard test code <code className="font-mono text-slate-800 dark:text-white bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">123456</code> to verify instantly.
-            </div>
+            {process.env.NEXT_PUBLIC_SKIP_PHONE_OTP === "true" ? (
+              <div className="bg-indigo-550/10 dark:bg-indigo-950/30 border border-indigo-500/20 dark:border-white/5 rounded-xl p-3.5 text-[11px] text-indigo-700 dark:text-indigo-300 transition-colors">
+                <span className="font-bold text-indigo-650 dark:text-indigo-400">💡 Feature Toggle Tip:</span> SMS OTP verification is bypassed. Confirming your phone number takes you directly to set your password.
+              </div>
+            ) : (
+              <div className="bg-slate-105 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 rounded-xl p-3.5 text-[11px] text-slate-600 dark:text-slate-400 transition-colors">
+                <span className="font-bold text-indigo-650 dark:text-indigo-400">💡 Local Sandbox Tip:</span> If Twilio keys are not set, a mock code will print to the server log. Alternatively, use standard test code <code className="font-mono text-slate-800 dark:text-white bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">123456</code> to verify instantly.
+              </div>
+            )}
           </form>
         )}
 
@@ -288,7 +428,7 @@ export default function SignupPage() {
             <div className="relative">
               <label className="text-xs font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Enter Code</label>
               <div className="relative flex items-center">
-                <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
+                <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
                   <Lock className="w-5 h-5" />
                 </div>
                 <input
@@ -306,7 +446,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="w-full bg-indigo-600 hover:bg-indigo-505 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center space-x-2"
+              className="w-full bg-indigo-600 hover:bg-indigo-550 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center space-x-2"
             >
               {isPending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -344,7 +484,7 @@ export default function SignupPage() {
               <div>
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Username (NumID Email)</label>
                 <div className="relative flex items-center">
-                  <div className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
+                  <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
                     <Mail className="w-5 h-5" />
                   </div>
                   <input

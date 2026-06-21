@@ -19,6 +19,10 @@ import {
 } from "@/app/actions/dashboard";
 import { logSignInAction } from "@/app/actions/auth";
 import { 
+  sendInvitationAction, 
+  getInvitationsAction 
+} from "@/app/actions/invitations";
+import { 
   Mail, 
   ShieldAlert, 
   User, 
@@ -179,6 +183,13 @@ export default function DashboardPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Invitations States
+  const [invitations, setInvitations] = useState<any[]>([]);
+  const [invitePhone, setInvitePhone] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteSending, setInviteSending] = useState(false);
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+
   const handleTestCloudflare = async () => {
     setCfLoading(true);
     setCfResult(null);
@@ -326,10 +337,47 @@ export default function DashboardPage() {
       if (res.error) {
         setErrorMsg(res.error);
       }
+      
+      // Fetch invitations
+      const invitesRes = await getInvitationsAction();
+      if (invitesRes.success && invitesRes.invitations) {
+        setInvitations(invitesRes.invitations);
+      }
     } else {
       setErrorMsg(res.message || "Failed to load dashboard statistics");
     }
     setLoading(false);
+  };
+
+  const handleSendInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!invitePhone || !inviteEmail) {
+      setErrorMsg("Both phone number and email are required to send an invitation.");
+      return;
+    }
+    setInviteSending(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await sendInvitationAction(invitePhone, inviteEmail);
+      if (res.success) {
+        setSuccessMsg(res.message);
+        setInvitePhone("");
+        setInviteEmail("");
+        // Reload invitations list
+        const invitesRes = await getInvitationsAction();
+        if (invitesRes.success && invitesRes.invitations) {
+          setInvitations(invitesRes.invitations);
+        }
+      } else {
+        setErrorMsg(res.message || "Failed to send invitation.");
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to send invitation.");
+    } finally {
+      setInviteSending(false);
+    }
   };
 
   useEffect(() => {
@@ -1174,6 +1222,120 @@ export default function DashboardPage() {
                           </button>
                         </div>
                       ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Invite a Friend Card */}
+            <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/5">
+                <div>
+                  <div className="flex items-center space-x-2 text-indigo-650 dark:text-indigo-400">
+                    <Sparkles className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                    <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg">Invite a Friend</h3>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    NumID is invite-only. Invite your friends by entering their phone number and destination email.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSendInvite} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-450 block mb-2 uppercase tracking-wide">Phone Number</label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. +15155550100"
+                    value={invitePhone}
+                    onChange={(e) => setInvitePhone(e.target.value)}
+                    className="w-full bg-slate-55 dark:bg-slate-900/60 border border-slate-205 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-450 block mb-2 uppercase tracking-wide">Destination Email</label>
+                  <input
+                    type="email"
+                    placeholder="e.g. friend@example.com"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="w-full bg-slate-55 dark:bg-slate-900/60 border border-slate-205 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:outline-none"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={inviteSending}
+                  className="bg-indigo-600 hover:bg-indigo-555 active:bg-indigo-700 disabled:bg-indigo-650/50 text-white text-xs font-semibold py-3 px-5 rounded-xl transition-all flex items-center justify-center gap-1.5 w-full sm:w-auto h-[40px]"
+                >
+                  {inviteSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                  <span>Send Invitation</span>
+                </button>
+              </form>
+
+              {/* Sent Invitations List */}
+              <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-white/5">
+                <h4 className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Sent Invitations</h4>
+                
+                {invitations.length === 0 ? (
+                  <div className="text-center py-6 text-xs text-slate-550 dark:text-slate-500 italic bg-slate-50/50 dark:bg-slate-900/10 rounded-xl border border-dashed border-slate-200 dark:border-white/5">
+                    No invitations sent yet. Invite someone using the form above!
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/5">
+                    <table className="min-w-full divide-y divide-slate-200 dark:divide-white/5 text-xs text-left">
+                      <thead className="bg-slate-50 dark:bg-slate-900 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        <tr>
+                          <th className="px-4 py-3">Phone</th>
+                          <th className="px-4 py-3">Email</th>
+                          <th className="px-4 py-3">Status</th>
+                          <th className="px-4 py-3">Link</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-250 dark:divide-white/5 bg-white dark:bg-slate-950/40">
+                        {invitations.map((invite) => {
+                          const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://numid.dev";
+                          const fullInviteLink = `${siteUrl}/signup?invite=${invite.id}`;
+                          
+                          return (
+                            <tr key={invite.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/30">
+                              <td className="px-4 py-3 font-mono font-medium text-slate-900 dark:text-white select-all">{invite.phone_number}</td>
+                              <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{invite.email}</td>
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wide ${
+                                  invite.status === "accepted" 
+                                    ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                                    : invite.status === "expired"
+                                    ? "bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300"
+                                    : "bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300"
+                                }`}>
+                                  {invite.status.toUpperCase()}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                {invite.status === "pending" ? (
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(fullInviteLink);
+                                      setCopiedInviteId(invite.id);
+                                      setTimeout(() => setCopiedInviteId(null), 2000);
+                                    }}
+                                    className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold inline-flex items-center gap-1"
+                                    title="Copy signup link to clipboard"
+                                  >
+                                    <Copy className="w-3.5 h-3.5" />
+                                    <span>{copiedInviteId === invite.id ? "Copied!" : "Copy Link"}</span>
+                                  </button>
+                                ) : (
+                                  <span className="text-slate-400 dark:text-slate-600 italic">N/A</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>

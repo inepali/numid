@@ -8,6 +8,7 @@ import {
   checkEmailVerification,
   formatPhoneNumber
 } from "@/lib/twilio-verify";
+import { verifyInvitationAction } from "@/app/actions/invitations";
 import { addDestinationAddress } from "@/lib/cloudflare-routing";
 import { cookies, headers } from "next/headers";
 
@@ -62,6 +63,19 @@ export async function sendPhoneOTPAction(phone: string) {
 
     if (existingUser) {
       return { success: false, message: "Account already exists, please use login instead" };
+    }
+
+    // Verify there is a pending invitation for this phone number
+    const { data: pendingInvite } = await adminClient
+      .from("invitations")
+      .select("id")
+      .eq("phone_number", formattedPhone)
+      .eq("status", "pending")
+      .limit(1)
+      .maybeSingle();
+
+    if (!pendingInvite) {
+      return { success: false, message: "Signup is invite-only. No pending invitation found for this phone number." };
     }
 
     // Rate Limiting (5 requests per hour)
@@ -147,22 +161,46 @@ export async function verifyPhoneOTPAction(phone: string, code: string) {
 export async function signUpAction(formData: FormData) {
   try {
     const password = formData.get("password") as string;
+    const inviteId = formData.get("inviteId") as string;
     
     if (!password) {
       return { success: false, message: "Password is required" };
     }
 
-    const cookieStore = await cookies();
-    const verifiedPhone = cookieStore.get("numid_verified_phone")?.value;
-    const verifiedTimeStr = cookieStore.get("numid_phone_verified_at")?.value;
-
-    if (!verifiedPhone || !verifiedTimeStr) {
-      return { success: false, message: "Phone number has not been verified yet. Please verify your phone first." };
+    if (!inviteId) {
+      return { success: false, message: "An invitation is required to register." };
     }
 
-    const verifiedTime = parseInt(verifiedTimeStr, 10);
-    if (Date.now() - verifiedTime > 15 * 60 * 1000) {
-      return { success: false, message: "Phone verification expired. Please verify your phone again." };
+    // 1. Verify invitation is valid
+    const inviteRes = await verifyInvitationAction(inviteId);
+    if (!inviteRes.success || !inviteRes.invite) {
+      return { success: false, message: inviteRes.message || "Invalid or expired invitation." };
+    }
+
+    const invite = inviteRes.invite;
+    const verifiedPhone = formatPhoneNumber(invite.phone_number);
+
+    // 2. If phone OTP is not skipped, check verification cookies
+    const skipOtp = process.env.NEXT_PUBLIC_SKIP_PHONE_OTP === "true";
+    if (!skipOtp) {
+      const cookieStore = await cookies();
+      const cookiePhone = cookieStore.get("numid_verified_phone")?.value;
+      const verifiedTimeStr = cookieStore.get("numid_phone_verified_at")?.value;
+
+      if (!cookiePhone || !verifiedTimeStr) {
+        return { success: false, message: "Phone number has not been verified yet. Please verify your phone first." };
+      }
+
+      const verifiedTime = parseInt(verifiedTimeStr, 10);
+      if (Date.now() - verifiedTime > 15 * 60 * 1000) {
+        return { success: false, message: "Phone verification expired. Please verify your phone again." };
+      }
+
+      // Ensure cookie phone matches invite phone number
+      const formattedCookiePhone = formatPhoneNumber(cookiePhone);
+      if (formattedCookiePhone !== verifiedPhone) {
+        return { success: false, message: "The verified phone number does not match the invitation." };
+      }
     }
 
     const numidEmail = `${verifiedPhone.replace("+", "")}@numid.us`;
@@ -202,21 +240,38 @@ export async function signUpAction(formData: FormData) {
       console.error("[SignUpAction] Error confirming user email:", confirmError);
     }
 
-    // Now, update phone_verified = true in public.users using admin client (since RLS restricts updates)
+    // Now, update phone_verified = true, destination_email = invite.email, and email_verified = true
     const { error: updateError } = await adminClient
       .from("users")
-      .update({ phone_verified: true })
+      .update({ 
+        phone_verified: true,
+        destination_email: invite.email,
+        email_verified: true
+      })
       .eq("id", data.user.id);
 
     if (updateError) {
       console.error("[SignUpAction] Error updating phone_verified status:", updateError);
     }
 
+    // Mark invitation as accepted
+    const { error: inviteUpdateError } = await adminClient
+      .from("invitations")
+      .update({
+        status: "accepted",
+        accepted_at: new Date().toISOString()
+      })
+      .eq("id", inviteId);
+
+    if (inviteUpdateError) {
+      console.error("[SignUpAction] Error marking invitation as accepted:", inviteUpdateError);
+    }
+
     // Audit Log for signup
     await adminClient.from("audit_logs").insert({
       user_id: data.user.id,
       action: "signup_success",
-      metadata: { phone_number: verifiedPhone, email: numidEmail }
+      metadata: { phone_number: verifiedPhone, email: numidEmail, invite_id: inviteId }
     });
 
     // Log the successful verification into public.verification_logs
@@ -228,13 +283,16 @@ export async function signUpAction(formData: FormData) {
       }
     ]);
 
-    // Clear verification cookies
-    cookieStore.delete("numid_verified_phone");
-    cookieStore.delete("numid_phone_verified_at");
+    // Clear verification cookies if they exist
+    if (!skipOtp) {
+      const cookieStore = await cookies();
+      cookieStore.delete("numid_verified_phone");
+      cookieStore.delete("numid_phone_verified_at");
+    }
 
     return { 
       success: true, 
-      message: "Signup successful! Your phone number has been verified. You can now access your dashboard." 
+      message: "Signup successful! Your phone number and email routing have been verified. You can now access your dashboard." 
     };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to complete signup" };
