@@ -45,6 +45,11 @@ export default function SignupPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Field-level error states
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
   // Check URL query parameters for invite code on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -91,25 +96,39 @@ export default function SignupPage() {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
+    setPhoneError(null);
+    setEmailError(null);
+    setPasswordError(null);
+
+    let hasError = false;
 
     const cleanPhone = phone.replace(/[^0-9]/g, "");
-    if (!phone || cleanPhone.length !== 10) {
-      setErrorMsg("Phone number must be exactly 10 digits.");
-      return;
+    if (!phone.trim()) {
+      setPhoneError("Phone number is required.");
+      hasError = true;
+    } else if (cleanPhone.length !== 10) {
+      setPhoneError("Phone number must be exactly 10 digits.");
+      hasError = true;
     }
 
-    if (!inviteEmail) {
-      setErrorMsg("Email address is required");
-      return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!inviteEmail.trim()) {
+      setEmailError("Email address is required.");
+      hasError = true;
+    } else if (!emailRegex.test(inviteEmail.trim())) {
+      setEmailError("Please enter a valid email address.");
+      hasError = true;
     }
 
     if (!password) {
-      setErrorMsg("Password is required");
-      return;
+      setPasswordError("Password is required.");
+      hasError = true;
+    } else if (password.length < 6) {
+      setPasswordError("Password must be at least 6 characters.");
+      hasError = true;
     }
 
-    if (password.length < 6) {
-      setErrorMsg("Password must be at least 6 characters");
+    if (hasError) {
       return;
     }
 
@@ -267,20 +286,23 @@ export default function SignupPage() {
             <div className="space-y-4">
               {/* Phone Input */}
               <div>
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">any Phone Number of 10 digit number</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Phone Number or any 10 digit number</label>
                 <div className="relative flex items-center">
-                  <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
+                  <div className="absolute left-4 text-slate-400 dark:text-slate-555 pointer-events-none">
                     <Smartphone className="w-5 h-5" />
                   </div>
                   <input
                     type="tel"
-                    placeholder="+15154146054"
+                    placeholder="5154146054"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono"
+                    className={`w-full bg-slate-105 dark:bg-slate-900 border ${phoneError ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-slate-200 dark:border-white/5 focus:border-indigo-500/40"} rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono`}
                     required
                   />
                 </div>
+                {phoneError && (
+                  <span className="text-[10px] text-red-550 dark:text-red-400 mt-1 block animate-fadeIn">{phoneError}</span>
+                )}
               </div>
 
               {/* Email Input */}
@@ -295,10 +317,13 @@ export default function SignupPage() {
                     placeholder="friend@example.com"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono"
+                    className={`w-full bg-slate-105 dark:bg-slate-900 border ${emailError ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-slate-200 dark:border-white/5 focus:border-indigo-500/40"} rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono`}
                     required
                   />
                 </div>
+                {emailError && (
+                  <span className="text-[10px] text-red-550 dark:text-red-400 mt-1 block animate-fadeIn">{emailError}</span>
+                )}
               </div>
 
               {/* Password Input */}
@@ -313,10 +338,13 @@ export default function SignupPage() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
+                    className={`w-full bg-slate-105 dark:bg-slate-900 border ${passwordError ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : "border-slate-200 dark:border-white/5 focus:border-indigo-500/40"} rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all`}
                     required
                   />
                 </div>
+                {passwordError && (
+                  <span className="text-[10px] text-red-550 dark:text-red-400 mt-1 block animate-fadeIn">{passwordError}</span>
+                )}
               </div>
             </div>
 
