@@ -128,8 +128,9 @@ function resolveNumidEmail(input: string): string {
   let cleaned = trimmed.replace(/[-() ]/g, "");
   if (cleaned.startsWith("+")) {
     cleaned = cleaned.replace("+", "");
-  } else if (cleaned.length === 10 && /^\d+$/.test(cleaned)) {
-    cleaned = `1${cleaned}`;
+  }
+  if (cleaned.length === 11 && cleaned.startsWith("1")) {
+    cleaned = cleaned.substring(1);
   }
   return `${cleaned}@numid.us`;
 }

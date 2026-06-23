@@ -36,6 +36,14 @@ const setMockAddresses = (addresses: MockAddress[]) => {
   (globalThis as any)._cfMockAddresses = addresses;
 };
 
+function getCleanPhone(phone: string): string {
+  let cleaned = phone.replace(/\+/g, "");
+  if (cleaned.length === 11 && cleaned.startsWith("1")) {
+    cleaned = cleaned.substring(1);
+  }
+  return cleaned;
+}
+
 /**
  * Register destination email at account level
  */
@@ -175,7 +183,7 @@ export async function mockVerifyDestinationEmail(email: string): Promise<boolean
 async function findExistingRuleId(numidAddress: string): Promise<string | null> {
   if (IS_MOCK_MODE) {
     const rules = getMockRules();
-    const found = rules.find(r => `${r.phone.replace(/\+/g, "")}@numid.us`.toLowerCase() === numidAddress.toLowerCase());
+    const found = rules.find(r => `${getCleanPhone(r.phone)}@numid.us`.toLowerCase() === numidAddress.toLowerCase());
     return found ? found.id : null;
   }
 
@@ -232,7 +240,7 @@ export async function createRoute(phone: string, destinationEmail: string): Prom
   if (destinationEmail.toLowerCase().endsWith("@numid.us") || destinationEmail.toLowerCase().endsWith("@numid.dev")) {
     throw new Error("Cannot create route to a NumID email address");
   }
-  const cleanPhone = phone.replace(/\+/g, "");
+  const cleanPhone = getCleanPhone(phone);
   const numidAddress = `${cleanPhone}@numid.us`;
 
   if (IS_MOCK_MODE) {
@@ -317,7 +325,7 @@ export async function updateRoute(routeId: string, phone: string, destinationEma
   if (destinationEmail.toLowerCase().endsWith("@numid.us") || destinationEmail.toLowerCase().endsWith("@numid.dev")) {
     throw new Error("Cannot update route to a NumID email address");
   }
-  const cleanPhone = phone.replace(/\+/g, "");
+  const cleanPhone = getCleanPhone(phone);
   const numidAddress = `${cleanPhone}@numid.us`;
 
   if (IS_MOCK_MODE) {
@@ -429,7 +437,7 @@ export async function getRoute(routeId: string): Promise<any> {
         name: rule.name,
         enabled: rule.enabled,
         actions: [{ type: "forward", value: [rule.destinationEmail] }],
-        matchers: [{ type: "literal", field: "to", value: `${rule.phone.replace(/\+/g, "")}@numid.us` }],
+        matchers: [{ type: "literal", field: "to", value: `${getCleanPhone(rule.phone)}@numid.us` }],
       };
     }
     return null;

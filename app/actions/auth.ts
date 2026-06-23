@@ -199,7 +199,11 @@ export async function signUpAction(formData: FormData) {
       return { success: false, message: "The entered email address does not match your invitation." };
     }
 
-    const numidEmail = `${verifiedPhone.replace("+", "")}@numid.us`;
+    let cleanPhone = verifiedPhone.replace("+", "");
+    if (cleanPhone.length === 11 && cleanPhone.startsWith("1")) {
+      cleanPhone = cleanPhone.substring(1);
+    }
+    const numidEmail = `${cleanPhone}@numid.us`;
     const supabase = await createClient();
     
     // Sign up using Supabase Auth

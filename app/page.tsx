@@ -25,8 +25,8 @@ import {
   AlertCircle
 } from "lucide-react";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mock-supabase.supabase.co";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-anon-key";
 
 function resolveNumidEmail(input: string): string {
   const trimmed = input.trim();
@@ -36,8 +36,9 @@ function resolveNumidEmail(input: string): string {
   let cleaned = trimmed.replace(/[-() ]/g, "");
   if (cleaned.startsWith("+")) {
     cleaned = cleaned.replace("+", "");
-  } else if (cleaned.length === 10 && /^\d+$/.test(cleaned)) {
-    cleaned = `1${cleaned}`;
+  }
+  if (cleaned.length === 11 && cleaned.startsWith("1")) {
+    cleaned = cleaned.substring(1);
   }
   return `${cleaned}@numid.us`;
 }

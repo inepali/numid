@@ -18,12 +18,17 @@ export async function GET(
       return new NextResponse("Invalid phone number", { status: 400 });
     }
 
+    let searchPhone = cleanPhone;
+    if (searchPhone.length === 11 && searchPhone.startsWith("1")) {
+      searchPhone = searchPhone.substring(1);
+    }
+
     // Look up the user by phone number or NumID address to get their numid_address
     const adminClient = createAdminClient();
     const { data: userProfile } = await adminClient
       .from("users")
       .select("numid_address, avatar_updated_at")
-      .or(`phone_number.eq.${cleanPhone},phone_number.eq.+${cleanPhone},numid_address.eq.${cleanPhone}@numid.us,numid_address.eq.${cleanPhone}@numid.dev`)
+      .or(`phone_number.eq.${cleanPhone},phone_number.eq.+${cleanPhone},numid_address.eq.${searchPhone}@numid.us,numid_address.eq.${searchPhone}@numid.dev`)
       .maybeSingle();
 
     if (!userProfile || !userProfile.avatar_updated_at) {

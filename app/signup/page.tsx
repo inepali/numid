@@ -124,7 +124,10 @@ export default function SignupPage() {
         setSuccessMsg("Account created successfully! Logging you in...");
         
         // Auto-login after successful registration using derived NumID email
-        const cleanPhone = phone.replace("+", "").replace(/[^0-9]/g, "");
+        let cleanPhone = phone.replace("+", "").replace(/[^0-9]/g, "");
+        if (cleanPhone.length === 11 && cleanPhone.startsWith("1")) {
+          cleanPhone = cleanPhone.substring(1);
+        }
         const derivedEmail = `${cleanPhone}@numid.us`;
         const { data, error } = await supabase.auth.signInWithPassword({
           email: derivedEmail,

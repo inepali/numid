@@ -19,13 +19,18 @@ export default async function PublicProfilePage({ params }: PageProps) {
     return notFound();
   }
 
+  let searchPhone = cleanPhone;
+  if (searchPhone.length === 11 && searchPhone.startsWith("1")) {
+    searchPhone = searchPhone.substring(1);
+  }
+
   const adminClient = createAdminClient();
   
   const { data: userProfile } = await adminClient
     .from("users")
     .select("phone_number, numid_address, social_profiles, status, email_verified, phone_verified, avatar_url, avatar_updated_at, first_name, last_name")
     .eq("status", "active")
-    .or(`phone_number.eq.${cleanPhone},phone_number.eq.+${cleanPhone},numid_address.eq.${cleanPhone}@numid.us`)
+    .or(`phone_number.eq.${cleanPhone},phone_number.eq.+${cleanPhone},numid_address.eq.${searchPhone}@numid.us`)
     .maybeSingle();
 
   if (!userProfile) {
