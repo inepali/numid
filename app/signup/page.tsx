@@ -23,7 +23,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 
-type SetupStep = "INVITE_INPUT" | "PHONE_INPUT" | "OTP_INPUT" | "ACCOUNT_DETAILS" | "EMAIL_PENDING";
+type SetupStep = "INVITE_INPUT" | "REGISTRATION" | "EMAIL_PENDING";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mock-supabase.supabase.co";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-anon-key";
@@ -39,22 +39,11 @@ export default function SignupPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
 
   // Error/Success state
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // Countdown timer for OTP resend
-  const [resendTimer, setResendTimer] = useState(0);
-
-  useEffect(() => {
-    if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendTimer]);
 
   // Check URL query parameters for invite code on mount
   useEffect(() => {
@@ -75,10 +64,8 @@ export default function SignupPage() {
     try {
       const res = await verifyInvitationAction(code);
       if (res.success && res.invite) {
-        setPhone(res.invite.phone_number);
-        setInviteEmail(res.invite.email);
-        setSuccessMsg("Invitation verified! Please confirm your phone number.");
-        setStep("PHONE_INPUT");
+        setSuccessMsg("Invitation verified! Please enter your matching details below.");
+        setStep("REGISTRATION");
       } else {
         setErrorMsg(res.message || "Invalid or expired invitation.");
         setStep("INVITE_INPUT");
@@ -100,60 +87,20 @@ export default function SignupPage() {
     handleVerifyInvite(inviteId.trim());
   };
 
-  const handleSendOTP = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    if (!phone || phone.trim().length < 8) {
-      setErrorMsg("Please enter a valid phone number (e.g. +15154146054)");
-      return;
-    }
-
-    const skipOtp = process.env.NEXT_PUBLIC_SKIP_PHONE_OTP === "true";
-    if (skipOtp) {
-      setStep("ACCOUNT_DETAILS");
-      setSuccessMsg("Phone number confirmed! Please create a password.");
-      return;
-    }
-
-    startTransition(async () => {
-      const res = await sendPhoneOTPAction(phone);
-      if (res.success) {
-        setStep("OTP_INPUT");
-        setResendTimer(60);
-        setSuccessMsg(res.message);
-      } else {
-        setErrorMsg(res.message);
-      }
-    });
-  };
-
-  const handleVerifyOTP = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    if (!otp || otp.length < 4) {
-      setErrorMsg("Please enter the verification code");
-      return;
-    }
-
-    startTransition(async () => {
-      const res = await verifyPhoneOTPAction(phone, otp);
-      if (res.success) {
-        setStep("ACCOUNT_DETAILS");
-        setSuccessMsg("Phone verified successfully! Now set your account password.");
-      } else {
-        setErrorMsg(res.message);
-      }
-    });
-  };
-
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
+
+    if (!phone) {
+      setErrorMsg("Phone number is required");
+      return;
+    }
+
+    if (!inviteEmail) {
+      setErrorMsg("Email address is required");
+      return;
+    }
 
     if (!password) {
       setErrorMsg("Password is required");
@@ -168,6 +115,8 @@ export default function SignupPage() {
     const formData = new FormData();
     formData.append("password", password);
     formData.append("inviteId", inviteId);
+    formData.append("phone", phone);
+    formData.append("email", inviteEmail);
 
     startTransition(async () => {
       const res = await signUpAction(formData);
@@ -175,7 +124,8 @@ export default function SignupPage() {
         setSuccessMsg("Account created successfully! Logging you in...");
         
         // Auto-login after successful registration using derived NumID email
-        const derivedEmail = `${phone.replace("+", "")}@numid.us`;
+        const cleanPhone = phone.replace("+", "").replace(/[^0-9]/g, "");
+        const derivedEmail = `${cleanPhone}@numid.us`;
         const { data, error } = await supabase.auth.signInWithPassword({
           email: derivedEmail,
           password,
@@ -190,22 +140,6 @@ export default function SignupPage() {
           await logSignInAction().catch(err => console.error("Failed to log sign-in:", err));
           window.location.href = "/dashboard";
         }
-      } else {
-        setErrorMsg(res.message);
-      }
-    });
-  };
-
-  const handleResendOTP = () => {
-    if (resendTimer > 0) return;
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    startTransition(async () => {
-      const res = await sendPhoneOTPAction(phone);
-      if (res.success) {
-        setResendTimer(60);
-        setSuccessMsg("OTP resent successfully. Check your messages.");
       } else {
         setErrorMsg(res.message);
       }
@@ -257,16 +191,6 @@ export default function SignupPage() {
                 <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
                 <span className={step === "OTP_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
                   <span className="hidden sm:inline">2. </span>SMS
-                </span>
-                <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
-                <span className={step === "ACCOUNT_DETAILS" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
-                  <span className="hidden sm:inline">3. </span>Password
-                </span>
-              </>
-            )}
-          </div>
-        )}
-
         {/* Global Error/Success Notification */}
         {errorMsg && (
           <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300 text-xs flex items-start space-x-2.5 animate-fadeIn">
@@ -306,7 +230,7 @@ export default function SignupPage() {
             <div className="relative">
               <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Invitation Code / Link</label>
               <div className="relative flex items-center">
-                <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
+                <div className="absolute left-4 text-slate-400 dark:text-slate-555 pointer-events-none">
                   <Lock className="w-5 h-5" />
                 </div>
                 <input
@@ -346,163 +270,58 @@ export default function SignupPage() {
           </form>
         )}
 
-        {/* STEP 1: Phone input */}
-        {step === "PHONE_INPUT" && (
-          <form onSubmit={handleSendOTP} className="space-y-6">
+        {/* STEP 1: Registration form */}
+        {step === "REGISTRATION" && (
+          <form onSubmit={handleSignup} className="space-y-5">
             <div className="text-left">
               <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Claim your NumID</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {process.env.NEXT_PUBLIC_SKIP_PHONE_OTP === "true"
-                  ? "Please confirm your phone number to complete account setup."
-                  : "Please verify your phone number to begin. We'll send an SMS code to verify ownership."}
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Please enter the exact phone number and email address associated with your invitation, then set a password.
               </p>
             </div>
 
-            <div className="relative">
-              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Phone Number</label>
-              <div className="relative flex items-center">
-                <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
-                  <Smartphone className="w-5 h-5" />
-                </div>
-                <input
-                  type="tel"
-                  placeholder="+15154146054"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  readOnly={!!inviteId}
-                  className={`w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono ${
-                    inviteId ? "bg-slate-100 dark:bg-slate-900/60 cursor-not-allowed text-slate-500" : ""
-                  }`}
-                  required
-                />
-              </div>
-              <span className="text-[10px] text-slate-500 block mt-1.5 leading-relaxed">
-                This is the phone number associated with your invitation.
-              </span>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isPending}
-              className="w-full bg-indigo-600 hover:bg-indigo-550 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 flex items-center justify-center space-x-2 group"
-            >
-              {isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <span>
-                    {process.env.NEXT_PUBLIC_SKIP_PHONE_OTP === "true"
-                      ? "Confirm & Set Password"
-                      : "Send Verification OTP"}
-                  </span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-
-            {process.env.NEXT_PUBLIC_SKIP_PHONE_OTP === "true" ? (
-              <div className="bg-indigo-550/10 dark:bg-indigo-950/30 border border-indigo-500/20 dark:border-white/5 rounded-xl p-3.5 text-[11px] text-indigo-700 dark:text-indigo-300 transition-colors">
-                <span className="font-bold text-indigo-650 dark:text-indigo-400">💡 Feature Toggle Tip:</span> SMS OTP verification is bypassed. Confirming your phone number takes you directly to set your password.
-              </div>
-            ) : (
-              <div className="bg-slate-105 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 rounded-xl p-3.5 text-[11px] text-slate-600 dark:text-slate-400 transition-colors">
-                <span className="font-bold text-indigo-650 dark:text-indigo-400">💡 Local Sandbox Tip:</span> If Twilio keys are not set, a mock code will print to the server log. Alternatively, use standard test code <code className="font-mono text-slate-800 dark:text-white bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">123456</code> to verify instantly.
-              </div>
-            )}
-          </form>
-        )}
-
-        {/* STEP 2: SMS OTP code input */}
-        {step === "OTP_INPUT" && (
-          <form onSubmit={handleVerifyOTP} className="space-y-6">
-            <div className="flex items-center space-x-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer text-xs font-semibold mb-2" onClick={() => setStep("PHONE_INPUT")}>
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Change phone number</span>
-            </div>
-            
-            <div className="text-left">
-              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Verify your phone</h2>
-              <p className="text-xs text-slate-505 dark:text-slate-400">We've sent a 6-digit code to <span className="text-slate-900 dark:text-white font-mono">{phone}</span>.</p>
-            </div>
-
-            <div className="relative">
-              <label className="text-xs font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Enter Code</label>
-              <div className="relative flex items-center">
-                <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="123456"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono tracking-widest text-center text-lg font-bold"
-                  required
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isPending}
-              className="w-full bg-indigo-600 hover:bg-indigo-550 active:bg-indigo-700 disabled:bg-indigo-600/50 text-white font-bold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center space-x-2"
-            >
-              {isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <span>Verify OTP Code</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-
-            <div className="flex justify-between items-center text-xs text-slate-550 dark:text-slate-400 pt-2">
-              <span>Didn't receive code?</span>
-              <button
-                type="button"
-                onClick={handleResendOTP}
-                disabled={resendTimer > 0 || isPending}
-                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold disabled:text-slate-400 dark:disabled:text-slate-655 transition-colors"
-              >
-                {resendTimer > 0 ? `Resend Code (${resendTimer}s)` : "Resend Code"}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* STEP 3: Create account with password */}
-        {step === "ACCOUNT_DETAILS" && (
-          <form onSubmit={handleSignup} className="space-y-6">
-            <div className="text-left">
-              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Create your account</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Your phone has been verified. Now set a password to secure your account.</p>
-            </div>
-
             <div className="space-y-4">
+              {/* Phone Input */}
               <div>
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Username (NumID Email)</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Phone Number</label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
+                    <Smartphone className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="tel"
+                    placeholder="+15154146054"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Email Input */}
+              <div>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Email Address</label>
                 <div className="relative flex items-center">
                   <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
                     <Mail className="w-5 h-5" />
                   </div>
                   <input
-                    type="text"
-                    value={`${phone.replace("+", "")}@numid.us`}
-                    readOnly
-                    className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-500 dark:text-slate-405 focus:outline-none cursor-not-allowed font-mono"
+                    type="email"
+                    placeholder="friend@example.com"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="w-full bg-slate-105 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono"
+                    required
                   />
                 </div>
-                <span className="text-[10px] text-slate-500 block mt-1.5 leading-relaxed">
-                  This is your permanent public identity, which remains read-only.
-                </span>
               </div>
 
+              {/* Password Input */}
               <div>
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Create Password</label>
                 <div className="relative flex items-center">
-                  <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
+                  <div className="absolute left-4 text-slate-400 dark:text-slate-555 pointer-events-none">
                     <Lock className="w-5 h-5" />
                   </div>
                   <input
@@ -520,7 +339,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-600/10 flex items-center justify-center space-x-2"
+              className="w-full bg-gradient-to-r from-indigo-600 to-violet-650 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-600/10 flex items-center justify-center space-x-2 mt-4"
             >
               {isPending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -537,7 +356,7 @@ export default function SignupPage() {
         {/* STEP 4: Email pending fallback screen */}
         {step === "EMAIL_PENDING" && (
           <div className="space-y-6 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 mx-auto flex items-center justify-center text-indigo-600 dark:text-indigo-400 animate-bounce">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 mx-auto flex items-center justify-center text-indigo-650 dark:text-indigo-400 animate-bounce">
               <Mail className="w-8 h-8" />
             </div>
 

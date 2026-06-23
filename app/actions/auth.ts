@@ -162,9 +162,19 @@ export async function signUpAction(formData: FormData) {
   try {
     const password = formData.get("password") as string;
     const inviteId = formData.get("inviteId") as string;
+    const phone = formData.get("phone") as string;
+    const email = formData.get("email") as string;
     
     if (!password) {
       return { success: false, message: "Password is required" };
+    }
+
+    if (!phone) {
+      return { success: false, message: "Phone number is required" };
+    }
+
+    if (!email) {
+      return { success: false, message: "Email address is required" };
     }
 
     if (!inviteId) {
@@ -180,27 +190,13 @@ export async function signUpAction(formData: FormData) {
     const invite = inviteRes.invite;
     const verifiedPhone = formatPhoneNumber(invite.phone_number);
 
-    // 2. If phone OTP is not skipped, check verification cookies
-    const skipOtp = process.env.NEXT_PUBLIC_SKIP_PHONE_OTP === "true";
-    if (!skipOtp) {
-      const cookieStore = await cookies();
-      const cookiePhone = cookieStore.get("numid_verified_phone")?.value;
-      const verifiedTimeStr = cookieStore.get("numid_phone_verified_at")?.value;
+    // 2. Validate entered phone and email match the invitation exactly
+    if (formatPhoneNumber(phone) !== verifiedPhone) {
+      return { success: false, message: "The entered phone number does not match your invitation." };
+    }
 
-      if (!cookiePhone || !verifiedTimeStr) {
-        return { success: false, message: "Phone number has not been verified yet. Please verify your phone first." };
-      }
-
-      const verifiedTime = parseInt(verifiedTimeStr, 10);
-      if (Date.now() - verifiedTime > 15 * 60 * 1000) {
-        return { success: false, message: "Phone verification expired. Please verify your phone again." };
-      }
-
-      // Ensure cookie phone matches invite phone number
-      const formattedCookiePhone = formatPhoneNumber(cookiePhone);
-      if (formattedCookiePhone !== verifiedPhone) {
-        return { success: false, message: "The verified phone number does not match the invitation." };
-      }
+    if (email.trim().toLowerCase() !== invite.email.toLowerCase()) {
+      return { success: false, message: "The entered email address does not match your invitation." };
     }
 
     const numidEmail = `${verifiedPhone.replace("+", "")}@numid.us`;
@@ -282,13 +278,6 @@ export async function signUpAction(formData: FormData) {
         status: "verified",
       }
     ]);
-
-    // Clear verification cookies if they exist
-    if (!skipOtp) {
-      const cookieStore = await cookies();
-      cookieStore.delete("numid_verified_phone");
-      cookieStore.delete("numid_phone_verified_at");
-    }
 
     return { 
       success: true, 
