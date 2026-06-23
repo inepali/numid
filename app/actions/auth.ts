@@ -188,15 +188,17 @@ export async function signUpAction(formData: FormData) {
     }
 
     const invite = inviteRes.invite;
-    const verifiedPhone = formatPhoneNumber(invite.phone_number);
+    const verifiedPhone = invite.code ? formatPhoneNumber(phone) : formatPhoneNumber(invite.phone_number);
 
-    // 2. Validate entered phone and email match the invitation exactly
-    if (formatPhoneNumber(phone) !== verifiedPhone) {
-      return { success: false, message: "The entered phone number does not match your invitation." };
-    }
+    // 2. Validate entered phone and email match the invitation exactly (skip for generic codes)
+    if (!invite.code) {
+      if (formatPhoneNumber(phone) !== verifiedPhone) {
+        return { success: false, message: "The entered phone number does not match your invitation." };
+      }
 
-    if (email.trim().toLowerCase() !== invite.email.toLowerCase()) {
-      return { success: false, message: "The entered email address does not match your invitation." };
+      if (email.trim().toLowerCase() !== invite.email.toLowerCase()) {
+        return { success: false, message: "The entered email address does not match your invitation." };
+      }
     }
 
     let cleanPhone = verifiedPhone.replace("+", "");
@@ -240,12 +242,12 @@ export async function signUpAction(formData: FormData) {
       console.error("[SignUpAction] Error confirming user email:", confirmError);
     }
 
-    // Now, update phone_verified = true, destination_email = invite.email, and email_verified = true
+    // Now, update phone_verified = true, destination_email, and email_verified = true
     const { error: updateError } = await adminClient
       .from("users")
       .update({ 
         phone_verified: true,
-        destination_email: invite.email,
+        destination_email: invite.code ? email.trim().toLowerCase() : invite.email,
         email_verified: true
       })
       .eq("id", data.user.id);
@@ -254,17 +256,19 @@ export async function signUpAction(formData: FormData) {
       console.error("[SignUpAction] Error updating phone_verified status:", updateError);
     }
 
-    // Mark invitation as accepted
-    const { error: inviteUpdateError } = await adminClient
-      .from("invitations")
-      .update({
-        status: "accepted",
-        accepted_at: new Date().toISOString()
-      })
-      .eq("id", inviteId);
+    // Mark invitation as accepted (skip for generic reusable codes)
+    if (!invite.code) {
+      const { error: inviteUpdateError } = await adminClient
+        .from("invitations")
+        .update({
+          status: "accepted",
+          accepted_at: new Date().toISOString()
+        })
+        .eq("id", inviteId);
 
-    if (inviteUpdateError) {
-      console.error("[SignUpAction] Error marking invitation as accepted:", inviteUpdateError);
+      if (inviteUpdateError) {
+        console.error("[SignUpAction] Error marking invitation as accepted:", inviteUpdateError);
+      }
     }
 
     // Audit Log for signup

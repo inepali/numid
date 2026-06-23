@@ -165,12 +165,17 @@ export async function verifyInvitationAction(inviteId: string) {
     }
 
     const adminClient = createAdminClient();
-    const { data: invite, error } = await adminClient
-      .from("invitations")
-      .select("*")
-      .eq("id", inviteId)
-      .eq("status", "pending")
-      .maybeSingle();
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isUUID = uuidRegex.test(inviteId.trim());
+
+    let query = adminClient.from("invitations").select("*").eq("status", "pending");
+    if (isUUID) {
+      query = query.eq("id", inviteId.trim());
+    } else {
+      query = query.eq("code", inviteId.trim());
+    }
+
+    const { data: invite, error } = await query.maybeSingle();
 
     if (error || !invite) {
       return { success: false, message: "Invalid, already accepted, or expired invitation." };
@@ -183,7 +188,7 @@ export async function verifyInvitationAction(inviteId: string) {
       await adminClient
         .from("invitations")
         .update({ status: "expired" })
-        .eq("id", inviteId);
+        .eq("id", invite.id);
       return { success: false, message: "This invitation has expired." };
     }
 
@@ -192,7 +197,8 @@ export async function verifyInvitationAction(inviteId: string) {
       invite: {
         id: invite.id,
         phone_number: invite.phone_number,
-        email: invite.email
+        email: invite.email,
+        code: invite.code || null
       }
     };
   } catch (error: any) {

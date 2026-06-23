@@ -92,8 +92,9 @@ export default function SignupPage() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    if (!phone) {
-      setErrorMsg("Phone number is required");
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
+    if (!phone || cleanPhone.length !== 10) {
+      setErrorMsg("Phone number must be exactly 10 digits.");
       return;
     }
 
@@ -266,7 +267,7 @@ export default function SignupPage() {
             <div className="space-y-4">
               {/* Phone Input */}
               <div>
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Phone Number</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">any Phone Number of 10 digit number</label>
                 <div className="relative flex items-center">
                   <div className="absolute left-4 text-slate-400 dark:text-slate-505 pointer-events-none">
                     <Smartphone className="w-5 h-5" />
