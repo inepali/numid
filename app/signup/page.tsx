@@ -170,27 +170,7 @@ export default function SignupPage() {
       {/* Signup Container Card */}
       <div className="w-full max-w-md bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl dark:shadow-none relative transition-colors duration-300">
         
-        {/* Step Indicator */}
-        {step !== "EMAIL_PENDING" && step !== "INVITE_INPUT" && (
-          <div className="flex justify-between items-center mb-8 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            {process.env.NEXT_PUBLIC_SKIP_PHONE_OTP === "true" ? (
-              <>
-                <span className={step === "PHONE_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
-                  <span className="hidden sm:inline">1. </span>Confirm
-                </span>
-                <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
-                <span className={step === "ACCOUNT_DETAILS" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
-                  <span className="hidden sm:inline">2. </span>Password
-                </span>
-              </>
-            ) : (
-              <>
-                <span className={step === "PHONE_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
-                  <span className="hidden sm:inline">1. </span>Phone
-                </span>
-                <div className="h-px bg-slate-200 dark:bg-white/5 flex-grow mx-1 sm:mx-2" />
-                <span className={step === "OTP_INPUT" ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 dark:text-slate-500"}>
-                  <span className="hidden sm:inline">2. </span>SMS
+
         {/* Global Error/Success Notification */}
         {errorMsg && (
           <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300 text-xs flex items-start space-x-2.5 animate-fadeIn">
