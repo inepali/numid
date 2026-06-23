@@ -228,6 +228,9 @@ export default function SignupPage() {
               <p className="text-xs text-slate-500 dark:text-slate-400 font-normal leading-relaxed">
                 NumID is currently invite-only. Enter your invitation code or paste your full invitation link to proceed.
               </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 font-normal leading-relaxed">
+                Don't have an invitation code? Email <a href="mailto:info@numid.dev?subject=CODE" className="text-indigo-650 dark:text-indigo-400 hover:underline font-semibold">info@numid.dev</a> with <strong className="font-mono bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded text-slate-800 dark:text-slate-200">CODE</strong> in the subject line to request one.
+              </p>
             </div>
 
             <div className="relative">
