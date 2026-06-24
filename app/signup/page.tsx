@@ -62,6 +62,7 @@ export default function SignupPage() {
     }
   }, []);
 
+
   const handleVerifyInvite = async (code: string) => {
     setInviteLoading(true);
     setErrorMsg(null);

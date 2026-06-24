@@ -21,6 +21,7 @@ interface PublicProfileClientProps {
     phone_number: string;
     numid_address: string;
     social_profiles: Record<string, string>;
+    private_profiles?: string[];
     avatar_url?: string;
     avatar_updated_at?: string;
     first_name?: string;
@@ -96,9 +97,15 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
 
   const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
 
+  const privateKeys = profile.private_profiles || [];
+
   // Check which tabs have active links
   const availableGroups = CATEGORY_GROUPS.filter(group => 
-    group.keys.some(k => profile.social_profiles?.[k] !== undefined && profile.social_profiles[k].trim() !== "")
+    group.keys.some(k => 
+      !privateKeys.includes(k) && 
+      profile.social_profiles?.[k] !== undefined && 
+      profile.social_profiles[k].trim() !== ""
+    )
   );
 
   const [activeTab, setActiveTab] = useState<string>(() => {
@@ -126,9 +133,10 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
   const handleShareContact = async () => {
     const formattedPhone = profile.phone_number;
     const notesArr: string[] = ["NumID Verified Profile"];
+    const privateKeys = profile.private_profiles || [];
     if (profile.social_profiles) {
       Object.entries(profile.social_profiles).forEach(([key, val]) => {
-        if (val && val.trim() !== "") {
+        if (!privateKeys.includes(key) && val && val.trim() !== "") {
           notesArr.push(`${key}: ${val}`);
         }
       });
@@ -322,7 +330,9 @@ export default function PublicProfileClient({ profile }: PublicProfileClientProp
             CATEGORY_GROUPS
               .filter(group => activeTab === group.key)
               .map(group => {
+                const privateKeys = profile.private_profiles || [];
                 const activeInGroup = group.keys.filter(k => 
+                  !privateKeys.includes(k) &&
                   profile.social_profiles?.[k] !== undefined && profile.social_profiles[k].trim() !== ""
                 );
 

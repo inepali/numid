@@ -608,7 +608,12 @@ export async function provisionCloudflareRouteAction() {
 /**
  * Action: Update social profiles for the authenticated user
  */
-export async function updateSocialProfilesAction(profiles: Record<string, string>, firstName?: string, lastName?: string) {
+export async function updateSocialProfilesAction(
+  profiles: Record<string, string>, 
+  firstName?: string, 
+  lastName?: string,
+  privateProfiles?: string[]
+) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -638,6 +643,9 @@ export async function updateSocialProfilesAction(profiles: Record<string, string
     if (lastName !== undefined) {
       updateData.last_name = lastName.trim() || null;
     }
+    if (privateProfiles !== undefined) {
+      updateData.private_profiles = privateProfiles;
+    }
 
     const { error: dbError } = await adminClient
       .from("users")
@@ -659,6 +667,7 @@ export async function updateSocialProfilesAction(profiles: Record<string, string
         count: Object.keys(sanitizedProfiles).length,
         first_name: firstName !== undefined ? (firstName.trim() || null) : null,
         last_name: lastName !== undefined ? (lastName.trim() || null) : null,
+        private_count: privateProfiles ? privateProfiles.length : 0,
       },
     });
 

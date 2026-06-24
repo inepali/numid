@@ -148,6 +148,7 @@ export default function DashboardPage() {
 
   // Social Profile States
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
+  const [privateProfiles, setPrivateProfiles] = useState<string[]>([]);
   const [activeProfileTab, setActiveProfileTab] = useState<ProfileCategoryKey>("socials");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -329,6 +330,7 @@ export default function DashboardPage() {
     if (res.success) {
       setProfile(res.profile);
       setSocialLinks(res.profile?.social_profiles || {});
+      setPrivateProfiles(res.profile?.private_profiles || []);
       setFirstName(res.profile?.first_name || "");
       setLastName(res.profile?.last_name || "");
       setAuditLogs(res.auditLogs || []);
@@ -558,7 +560,7 @@ export default function DashboardPage() {
     setSuccessMsg(null);
 
     startTransition(async () => {
-      const res = await updateSocialProfilesAction(socialLinks, firstName, lastName);
+      const res = await updateSocialProfilesAction(socialLinks, firstName, lastName, privateProfiles);
       if (res.success) {
         setSuccessMsg(res.message);
         await loadData();
@@ -1207,6 +1209,34 @@ export default function DashboardPage() {
                               />
                             </div>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPrivateProfiles((prev) =>
+                                prev.includes(key)
+                                  ? prev.filter((k) => k !== key)
+                                  : [...prev, key]
+                              );
+                            }}
+                            className={`p-2 rounded-lg border transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                              privateProfiles.includes(key)
+                                ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
+                                : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
+                            }`}
+                            title={privateProfiles.includes(key) ? "Click to make Public" : "Click to make Private"}
+                          >
+                            {privateProfiles.includes(key) ? (
+                              <>
+                                <Lock className="w-3.5 h-3.5" />
+                                <span className="text-[10px] font-bold uppercase">Private</span>
+                              </>
+                            ) : (
+                              <>
+                                <Globe className="w-3.5 h-3.5" />
+                                <span className="text-[10px] font-bold uppercase">Public</span>
+                              </>
+                            )}
+                          </button>
 
                           <button
                             onClick={() => {
@@ -1215,8 +1245,9 @@ export default function DashboardPage() {
                                 delete updated[key];
                                 return updated;
                               });
+                              setPrivateProfiles((prev) => prev.filter((k) => k !== key));
                             }}
-                            className="p-2 text-slate-400 dark:text-slate-505 hover:text-red-650 dark:hover:text-red-400 rounded-lg hover:bg-red-500/5 dark:hover:bg-red-500/10 transition-all shrink-0"
+                            className="p-2 text-slate-400 dark:text-slate-505 hover:text-red-655 dark:hover:text-red-400 rounded-lg hover:bg-red-500/5 dark:hover:bg-red-500/10 transition-all shrink-0"
                             title="Remove Link"
                           >
                             <Trash2 className="w-4 h-4" />
