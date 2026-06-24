@@ -286,6 +286,10 @@ export default function SignupPage() {
               </p>
             </div>
 
+            <div className="p-3.5 rounded-xl bg-indigo-550/5 dark:bg-indigo-500/10 border border-indigo-500/10 dark:border-indigo-500/20 text-xs text-indigo-750 dark:text-indigo-300 leading-relaxed text-left">
+              🚀 <strong>Consolidate all your IDs into one</strong> using your phone number, and share securely and uniquely (like <a href="https://www.numid.dev/5154146054" target="_blank" rel="noopener noreferrer" className="underline font-semibold text-indigo-650 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">numid.dev/5154146054</a>).
+            </div>
+
             <div className="space-y-4">
               {/* Phone Input */}
               <div>
