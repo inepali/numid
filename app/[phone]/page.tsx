@@ -19,10 +19,25 @@ export default async function PublicProfilePage({ params }: PageProps) {
     return notFound();
   }
 
-  let searchPhone = cleanPhone;
-  if (searchPhone.length === 11 && searchPhone.startsWith("1")) {
-    searchPhone = searchPhone.substring(1);
+  // Generate candidates to cover various formats: 10-digit local, 11-digit with country code
+  const phoneCandidates: string[] = [cleanPhone, `+${cleanPhone}`];
+  const addressCandidates: string[] = [`${cleanPhone}@numid.us`];
+
+  if (cleanPhone.length === 10) {
+    const withUS = `1${cleanPhone}`;
+    phoneCandidates.push(withUS, `+${withUS}`);
+    addressCandidates.push(`${withUS}@numid.us`);
+  } else if (cleanPhone.length === 11 && cleanPhone.startsWith("1")) {
+    const withoutUS = cleanPhone.substring(1);
+    phoneCandidates.push(withoutUS, `+${withoutUS}`);
+    addressCandidates.push(`${withoutUS}@numid.us`);
   }
+
+  const orFilters = [
+    ...phoneCandidates.map(p => `phone_number.eq.${p}`),
+    ...addressCandidates.map(a => `numid_address.eq.${a}`),
+    ...addressCandidates.map(a => `numid_address.eq.${a.replace("@numid.us", "@numid.dev")}`)
+  ].join(",");
 
   const adminClient = createAdminClient();
   
@@ -30,7 +45,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
     .from("users")
     .select("phone_number, numid_address, social_profiles, private_profiles, status, email_verified, phone_verified, avatar_url, avatar_updated_at, first_name, last_name")
     .eq("status", "active")
-    .or(`phone_number.eq.${cleanPhone},phone_number.eq.+${cleanPhone},numid_address.eq.${searchPhone}@numid.us`)
+    .or(orFilters)
     .maybeSingle();
 
   if (!userProfile) {

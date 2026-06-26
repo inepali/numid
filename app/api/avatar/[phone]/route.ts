@@ -18,17 +18,31 @@ export async function GET(
       return new NextResponse("Invalid phone number", { status: 400 });
     }
 
-    let searchPhone = cleanPhone;
-    if (searchPhone.length === 11 && searchPhone.startsWith("1")) {
-      searchPhone = searchPhone.substring(1);
+    // Generate candidates to cover various formats: 10-digit local, 11-digit with country code
+    const phoneCandidates: string[] = [cleanPhone, `+${cleanPhone}`];
+    const addressCandidates: string[] = [`${cleanPhone}@numid.us`, `${cleanPhone}@numid.dev`];
+
+    if (cleanPhone.length === 10) {
+      const withUS = `1${cleanPhone}`;
+      phoneCandidates.push(withUS, `+${withUS}`);
+      addressCandidates.push(`${withUS}@numid.us`, `${withUS}@numid.dev`);
+    } else if (cleanPhone.length === 11 && cleanPhone.startsWith("1")) {
+      const withoutUS = cleanPhone.substring(1);
+      phoneCandidates.push(withoutUS, `+${withoutUS}`);
+      addressCandidates.push(`${withoutUS}@numid.us`, `${withoutUS}@numid.dev`);
     }
+
+    const orFilters = [
+      ...phoneCandidates.map(p => `phone_number.eq.${p}`),
+      ...addressCandidates.map(a => `numid_address.eq.${a}`)
+    ].join(",");
 
     // Look up the user by phone number or NumID address to get their numid_address
     const adminClient = createAdminClient();
     const { data: userProfile } = await adminClient
       .from("users")
       .select("numid_address, avatar_updated_at")
-      .or(`phone_number.eq.${cleanPhone},phone_number.eq.+${cleanPhone},numid_address.eq.${searchPhone}@numid.us,numid_address.eq.${searchPhone}@numid.dev`)
+      .or(orFilters)
       .maybeSingle();
 
     if (!userProfile || !userProfile.avatar_updated_at) {
@@ -76,7 +90,7 @@ export async function GET(
     }
 
     // Return the avatar image
-    const response = new NextResponse(buffer, {
+    const response = new NextResponse(buffer as any, {
       status: 200,
       headers: {
         "Content-Type": mimeType,
