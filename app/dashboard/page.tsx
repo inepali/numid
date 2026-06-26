@@ -570,6 +570,27 @@ export default function DashboardPage() {
     });
   };
 
+  const handleToggleVisibility = (key: string) => {
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const updatedPrivate = privateProfiles.includes(key)
+      ? privateProfiles.filter((k) => k !== key)
+      : [...privateProfiles, key];
+
+    setPrivateProfiles(updatedPrivate);
+
+    startTransition(async () => {
+      const res = await updateSocialProfilesAction(socialLinks, firstName, lastName, updatedPrivate);
+      if (res.success) {
+        setSuccessMsg("Visibility updated successfully!");
+        await loadData();
+      } else {
+        setErrorMsg(res.message);
+      }
+    });
+  };
+
   const handleExportData = () => {
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -1224,13 +1245,7 @@ export default function DashboardPage() {
                           </div>
                           <button
                             type="button"
-                            onClick={() => {
-                              setPrivateProfiles((prev) =>
-                                prev.includes(key)
-                                  ? prev.filter((k) => k !== key)
-                                  : [...prev, key]
-                              );
-                            }}
+                            onClick={() => handleToggleVisibility(key)}
                             className={`p-2 rounded-lg border transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
                               privateProfiles.includes(key)
                                 ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
