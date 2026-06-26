@@ -27,19 +27,21 @@ export async function GET(request: NextRequest) {
 
     const adminClient = createAdminClient();
     
-    // Test raw filter query
+    // Test raw filter query with maybeSingle
     const { data: rawData, error: rawError } = await adminClient
       .from("users")
-      .select("id, phone_number, numid_address")
+      .select("phone_number, numid_address, social_profiles, private_profiles, status, email_verified, phone_verified, avatar_url, avatar_updated_at, first_name, last_name")
       .eq("status", "active")
-      .or(orFilters);
+      .or(orFilters)
+      .maybeSingle();
 
-    // Test quoted filter query
+    // Test quoted filter query with maybeSingle
     const { data: quotedData, error: quotedError } = await adminClient
       .from("users")
-      .select("id, phone_number, numid_address")
+      .select("phone_number, numid_address, social_profiles, private_profiles, status, email_verified, phone_verified, avatar_url, avatar_updated_at, first_name, last_name")
       .eq("status", "active")
-      .or(orFiltersQuoted);
+      .or(orFiltersQuoted)
+      .maybeSingle();
 
     return NextResponse.json({
       success: true,
