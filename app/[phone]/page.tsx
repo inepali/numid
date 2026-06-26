@@ -57,7 +57,28 @@ export default async function PublicProfilePage({ params }: PageProps) {
     return notFound();
   }
 
+  // Safe checks for private profiles array
+  const privateKeys = Array.isArray(userProfile.private_profiles)
+    ? (userProfile.private_profiles as string[])
+    : [];
+
+  // Filter social profiles on the server-side to only include public links
+  const publicSocialProfiles: Record<string, string> = {};
+  if (userProfile.social_profiles && typeof userProfile.social_profiles === "object") {
+    for (const [key, val] of Object.entries(userProfile.social_profiles as Record<string, string>)) {
+      if (!privateKeys.includes(key) && val && val.trim() !== "") {
+        publicSocialProfiles[key] = val;
+      }
+    }
+  }
+
+  const sanitizedProfile = {
+    ...userProfile,
+    social_profiles: publicSocialProfiles,
+    private_profiles: privateKeys,
+  };
+
   return (
-    <PublicProfileClient profile={userProfile} />
+    <PublicProfileClient profile={sanitizedProfile} />
   );
 }
