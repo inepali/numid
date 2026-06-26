@@ -156,6 +156,102 @@ export default function LandingPage() {
   return (
     <div className="relative min-h-screen text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-black transition-colors duration-300 overflow-hidden font-sans">
       
+      {/* JSON-LD Structured Data for AEO and SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "WebApplication",
+                "@id": "https://numid.dev/#webapp",
+                "name": "NumID",
+                "url": "https://numid.dev",
+                "description": "Never change your public email again. Use your phone number as a permanent public email address and forward messages securely to any destination.",
+                "applicationCategory": "BusinessApplication, Utility",
+                "operatingSystem": "All",
+                "browserRequirements": "Requires HTML5 compatible browser",
+                "offers": {
+                  "@type": "AggregateOffer",
+                  "priceCurrency": "USD",
+                  "lowPrice": "0.00",
+                  "highPrice": "5.00",
+                  "offerCount": "2",
+                  "offers": [
+                    {
+                      "@type": "Offer",
+                      "name": "Free Plan",
+                      "price": "0.00",
+                      "priceCurrency": "USD"
+                    },
+                    {
+                      "@type": "Offer",
+                      "name": "Premium Plan",
+                      "price": "5.00",
+                      "priceCurrency": "USD"
+                    }
+                  ]
+                }
+              },
+              {
+                "@type": "Organization",
+                "@id": "https://numid.dev/#organization",
+                "name": "NumID",
+                "url": "https://numid.dev",
+                "logo": "https://numid.dev/logo.png"
+              },
+              {
+                "@type": "FAQPage",
+                "@id": "https://numid.dev/#faq",
+                "mainEntity": [
+                  {
+                    "@type": "Question",
+                    "name": "How does NumID work?",
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": "NumID links your phone number to a custom routing email address at our domain (e.g., [your-phone]@numid.us). We use Cloudflare Email Routing to forward all incoming emails to your private destination email. You can change your private destination email at any time from your dashboard without changing your public NumID address."
+                    }
+                  },
+                  {
+                    "@type": "Question",
+                    "name": "Why use my phone number as an email?",
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": "It is incredibly easy to remember and communicate. When giving out your email address verbally, over the phone, or at checkout counters, stating your phone number is fast and less error-prone. It also hides your private inbox address from public lists."
+                    }
+                  },
+                  {
+                    "@type": "Question",
+                    "name": "Is my destination email address hidden?",
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": "Yes. Senders only see your public NumID address (e.g., 5154146054@numid.us). The forwarding happens securely in the background at the Cloudflare DNS level. Senders never learn your actual Gmail, Outlook, or Yahoo address."
+                    }
+                  },
+                  {
+                    "@type": "Question",
+                    "name": "Can I reply to emails using my NumID?",
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": "Currently, NumID is optimized for forwarding (receiving emails). In our Premium Plan (coming soon), we will support reply masking, allowing you to send or reply to messages directly from your phone number alias."
+                    }
+                  },
+                  {
+                    "@type": "Question",
+                    "name": "How do you verify my phone number?",
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": "We use the Twilio Verify API to send a secure One-Time Passcode (OTP) via SMS. Your phone number must be verified before your NumID is registered, preventing unauthorized signups."
+                    }
+                  }
+                ]
+              }
+            ]
+          })
+        }}
+      />
+
       {/* Background gradients */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-900/10 dark:bg-indigo-900/20 blur-[120px] pointer-events-none animate-pulse-slow" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-violet-900/10 dark:bg-violet-900/20 blur-[120px] pointer-events-none animate-pulse-slow" />

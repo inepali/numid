@@ -1,9 +1,94 @@
 import { createAdminClient } from "@/lib/supabase";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import PublicProfileClient from "./profile-client";
 
 interface PageProps {
   params: Promise<{ phone: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { phone } = await params;
+  if (!phone) return {};
+
+  const cleanPhone = phone.replace(/[^0-9]/g, "");
+  if (!cleanPhone) return {};
+
+  const phoneCandidates: string[] = [cleanPhone, `+${cleanPhone}`];
+  const addressCandidates: string[] = [`${cleanPhone}@numid.us`];
+
+  if (cleanPhone.length === 10) {
+    const withUS = `1${cleanPhone}`;
+    phoneCandidates.push(withUS, `+${withUS}`);
+    addressCandidates.push(`${withUS}@numid.us`);
+  } else if (cleanPhone.length === 11 && cleanPhone.startsWith("1")) {
+    const withoutUS = cleanPhone.substring(1);
+    phoneCandidates.push(withoutUS, `+${withoutUS}`);
+    addressCandidates.push(`${withoutUS}@numid.us`);
+  }
+
+  const orFilters = [
+    ...phoneCandidates.map(p => `phone_number.eq.${p}`),
+    ...addressCandidates.map(a => `numid_address.eq.${a}`),
+    ...addressCandidates.map(a => `numid_address.eq.${a.replace("@numid.us", "@numid.dev")}`)
+  ].join(",");
+
+  try {
+    const adminClient = createAdminClient();
+    const { data: userProfile } = await adminClient
+      .from("users")
+      .select("phone_number, numid_address, private_profiles, first_name, last_name, status, phone_verified, email_verified")
+      .eq("status", "active")
+      .or(orFilters)
+      .maybeSingle();
+
+    if (!userProfile || !userProfile.phone_verified || !userProfile.email_verified) {
+      return {
+        title: "Profile Not Found | NumID",
+        description: "The requested NumID profile does not exist or is not verified.",
+      };
+    }
+
+    const privateKeys = Array.isArray(userProfile.private_profiles)
+      ? (userProfile.private_profiles as string[])
+      : [];
+
+    const isFirstNamePrivate = privateKeys.includes("first_name");
+    const isLastNamePrivate = privateKeys.includes("last_name");
+
+    const firstName = isFirstNamePrivate ? "" : (userProfile.first_name || "").trim();
+    const lastName = isLastNamePrivate ? "" : (userProfile.last_name || "").trim();
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    const displayIdentifier = userProfile.numid_address || `${cleanPhone}@numid.us`;
+
+    const title = fullName 
+      ? `${fullName} (@${cleanPhone}) | NumID Profile`
+      : `${displayIdentifier} | NumID Profile`;
+
+    const description = fullName
+      ? `View ${fullName}'s verified public NumID contact details and social profiles. Send emails securely to ${displayIdentifier}.`
+      : `View verified public NumID contact details and social profiles for ${displayIdentifier}.`;
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        type: "profile",
+        username: cleanPhone,
+      },
+      twitter: {
+        card: "summary",
+        title,
+        description,
+      }
+    };
+  } catch (e) {
+    console.error("Error generating dynamic profile metadata:", e);
+    return {};
+  }
 }
 
 export default async function PublicProfilePage({ params }: PageProps) {
