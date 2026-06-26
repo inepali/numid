@@ -1053,15 +1053,28 @@ export default function DashboardPage() {
                     <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg">Public Identity Profile</h3>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Configure your social networks and contact links. Your profile is live at{" "}
-                    <Link
-                      href={`/${profile?.phone_number?.replace("+", "")}`}
-                      target="_blank"
-                      className="text-indigo-655 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold underline inline-flex items-center gap-1"
-                    >
-                      <span>numid.dev/{profile?.phone_number?.replace("+", "")}</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </Link>
+                    Configure your social networks and contact links.{" "}
+                    {profile?.status === "active" ? (
+                      <>
+                        Your profile is live at{" "}
+                        <Link
+                          href={`/${profile?.phone_number?.replace("+", "")}`}
+                          target="_blank"
+                          className="text-indigo-655 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold underline inline-flex items-center gap-1"
+                        >
+                          <span>numid.dev/{profile?.phone_number?.replace("+", "")}</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        Your profile will be live at{" "}
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">
+                          numid.dev/{profile?.phone_number?.replace("+", "")}
+                        </span>{" "}
+                        once forwarding is verified.
+                      </>
+                    )}
                   </p>
                 </div>
                 
