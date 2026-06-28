@@ -10,6 +10,7 @@ import {
   Mail, 
   ArrowRight, 
   ShieldCheck, 
+  UserCheck,
   Zap, 
   RefreshCw, 
   Check, 
@@ -573,13 +574,23 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="p-5 sm:p-8 rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 shadow-sm dark:shadow-none transition-all group col-span-1 md:col-span-2">
+          <div className="p-5 sm:p-8 rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 shadow-sm dark:shadow-none transition-all group col-span-1 md:col-span-1">
             <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 dark:text-orange-400 mb-6 group-hover:scale-110 transition-transform">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Dual Secure Verification</h3>
             <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
               SMS validation via Twilio Verify ensures you own the phone number. Double email validation confirms you own the destination box. Maximum account safety guaranteed.
+            </p>
+          </div>
+
+          <div className="p-5 sm:p-8 rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 shadow-sm dark:shadow-none transition-all group col-span-1 md:col-span-1">
+            <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-6 group-hover:scale-110 transition-transform">
+              <UserCheck className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Consolidated Profiles</h3>
+            <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+              Consolidate your social handles and contact profiles into a single public URL. Toggle visibility controls instantly to control what different people see.
             </p>
           </div>
 
