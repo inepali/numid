@@ -7,9 +7,9 @@ export const metadata: Metadata = {
   description: "Never change your public email again. Use your phone number as a permanent public email address and forward messages securely to any destination.",
   metadataBase: new URL("https://numid.dev"),
   icons: {
-    icon: "/logo.svg",
-    shortcut: "/logo.svg",
-    apple: "/logo.svg",
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
   },
   openGraph: {
     title: "NumID | Your Phone Number. Your Permanent Email Address.",

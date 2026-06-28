@@ -224,7 +224,7 @@ export default function AdminPage() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Link href="/" className="w-8 h-8 rounded-lg flex items-center justify-center">
-              <img src="/logo.svg" alt="NumID Logo" className="w-8 h-8 object-contain rounded-lg" />
+              <img src="/logo.png" alt="NumID Logo" className="w-8 h-8 object-contain rounded-lg" />
             </Link>
             <span className="font-display font-extrabold text-slate-900 dark:text-white text-lg tracking-tight">
               Num<span className="text-indigo-650 dark:text-indigo-400">ID</span> <span className="text-slate-550 dark:text-slate-500 text-xs font-semibold ml-1 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 uppercase tracking-wider">Admin</span>

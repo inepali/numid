@@ -181,7 +181,7 @@ export default function SignupPage() {
 
       {/* Header logo */}
       <Link href="/" className="flex items-center space-x-2 mb-8 group">
-        <img src="/logo.svg" alt="NumID Logo" className="w-8 h-8 object-contain rounded-lg" />
+        <img src="/logo.png" alt="NumID Logo" className="w-8 h-8 object-contain rounded-lg" />
         <span className="font-display font-extrabold text-slate-900 dark:text-white text-lg tracking-tight group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
           Num<span className="text-indigo-650 dark:text-indigo-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-300">ID</span>
         </span>
