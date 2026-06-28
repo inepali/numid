@@ -646,9 +646,7 @@ export default function DashboardPage() {
         </div>
 
         <Link href="/" className="flex items-center space-x-2 mb-8">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center">
-            <span className="font-display font-extrabold text-white text-base">N</span>
-          </div>
+          <img src="/logo.svg" alt="NumID Logo" className="w-8 h-8 object-contain rounded-lg" />
           <span className="font-display font-extrabold text-slate-900 dark:text-white text-lg tracking-tight">
             Num<span className="text-indigo-650 dark:text-indigo-400">ID</span>
           </span>
@@ -739,8 +737,8 @@ export default function DashboardPage() {
       <header className="sticky top-0 z-40 border-b border-slate-200 dark:border-white/5 bg-white/60 dark:bg-black/60 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Link href="/" className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center">
-              <span className="font-display font-extrabold text-white text-base">N</span>
+            <Link href="/" className="w-8 h-8 rounded-lg flex items-center justify-center">
+              <img src="/logo.svg" alt="NumID Logo" className="w-8 h-8 object-contain rounded-lg" />
             </Link>
             <span className="font-display font-extrabold text-slate-900 dark:text-white text-lg tracking-tight">
               Num<span className="text-indigo-600 dark:text-indigo-400">ID</span>

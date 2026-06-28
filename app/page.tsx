@@ -260,9 +260,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-slate-200 dark:border-white/5 bg-white/60 dark:bg-black/50 backdrop-blur-md transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <span className="font-display font-extrabold text-white text-lg tracking-wider">N</span>
-            </div>
+            <img src="/logo.svg" alt="NumID Logo" className="w-9 h-9 object-contain rounded-xl shadow-lg shadow-indigo-500/20" />
             <span className="font-display font-extrabold text-slate-900 dark:text-white text-xl tracking-tight">
               Num<span className="text-indigo-400">ID</span>
             </span>
@@ -749,9 +747,7 @@ export default function LandingPage() {
       <footer className="border-t border-slate-200 dark:border-white/5 py-12 bg-slate-100/50 dark:bg-slate-950/40 text-sm text-slate-500 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center">
-              <span className="font-display font-extrabold text-white text-xs">N</span>
-            </div>
+            <img src="/logo.svg" alt="NumID Logo" className="w-6 h-6 object-contain rounded-lg" />
             <span className="font-display font-semibold text-slate-900 dark:text-white">NumID</span>
           </div>
           
@@ -789,9 +785,7 @@ export default function LandingPage() {
 
             {/* Logo mark */}
             <div className="flex items-center space-x-2 mb-8">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center">
-                <span className="font-display font-extrabold text-white text-base">N</span>
-              </div>
+              <img src="/logo.svg" alt="NumID Logo" className="w-8 h-8 object-contain rounded-lg" />
               <span className="font-display font-extrabold text-slate-900 dark:text-white text-lg tracking-tight">
                 Num<span className="text-indigo-400">ID</span>
               </span>
