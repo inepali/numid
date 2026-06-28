@@ -161,7 +161,6 @@ export async function verifyPhoneOTPAction(phone: string, code: string) {
 export async function signUpAction(formData: FormData) {
   try {
     const password = formData.get("password") as string;
-    const inviteId = formData.get("inviteId") as string;
     const phone = formData.get("phone") as string;
     const email = formData.get("email") as string;
     
@@ -177,35 +176,31 @@ export async function signUpAction(formData: FormData) {
       return { success: false, message: "Email address is required" };
     }
 
-    if (!inviteId) {
-      return { success: false, message: "An invitation is required to register." };
+    // Validate phone number is a 10 digit numeric value
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
+    if (cleanPhone.length !== 10) {
+      return { success: false, message: "Phone number must be exactly 10 digits." };
     }
 
-    // 1. Verify invitation is valid
-    const inviteRes = await verifyInvitationAction(inviteId);
-    if (!inviteRes.success || !inviteRes.invite) {
-      return { success: false, message: inviteRes.message || "Invalid or expired invitation." };
+    const verifiedPhone = formatPhoneNumber(phone);
+    const adminClient = createAdminClient();
+
+    // Check if phone number is already registered in users table
+    const { data: existingUser } = await adminClient
+      .from("users")
+      .select("id")
+      .or(`phone_number.eq.${cleanPhone},phone_number.eq.${verifiedPhone},phone_number.eq.+${cleanPhone}`)
+      .maybeSingle();
+
+    if (existingUser) {
+      return { success: false, message: "Account already exists, please use login instead" };
     }
 
-    const invite = inviteRes.invite;
-    const verifiedPhone = invite.code ? formatPhoneNumber(phone) : formatPhoneNumber(invite.phone_number);
-
-    // 2. Validate entered phone and email match the invitation exactly (skip for generic codes)
-    if (!invite.code) {
-      if (formatPhoneNumber(phone) !== verifiedPhone) {
-        return { success: false, message: "The entered phone number does not match your invitation." };
-      }
-
-      if (email.trim().toLowerCase() !== invite.email.toLowerCase()) {
-        return { success: false, message: "The entered email address does not match your invitation." };
-      }
+    let rawPhoneClean = verifiedPhone.replace("+", "");
+    if (rawPhoneClean.length === 11 && rawPhoneClean.startsWith("1")) {
+      rawPhoneClean = rawPhoneClean.substring(1);
     }
-
-    let cleanPhone = verifiedPhone.replace("+", "");
-    if (cleanPhone.length === 11 && cleanPhone.startsWith("1")) {
-      cleanPhone = cleanPhone.substring(1);
-    }
-    const numidEmail = `${cleanPhone}@numid.us`;
+    const numidEmail = `${rawPhoneClean}@numid.us`;
     const supabase = await createClient();
     
     // Sign up using Supabase Auth
@@ -230,8 +225,6 @@ export async function signUpAction(formData: FormData) {
       return { success: false, message: "Signup failed. Please try again." };
     }
 
-    const adminClient = createAdminClient();
-
     // Confirm the email in Supabase Auth using the admin client
     const { error: confirmError } = await adminClient.auth.admin.updateUserById(
       data.user.id,
@@ -247,35 +240,20 @@ export async function signUpAction(formData: FormData) {
       .from("users")
       .update({ 
         phone_verified: true,
-        destination_email: invite.code ? email.trim().toLowerCase() : invite.email,
+        destination_email: email.trim().toLowerCase(),
         email_verified: true
       })
       .eq("id", data.user.id);
 
     if (updateError) {
-      console.error("[SignUpAction] Error updating phone_verified status:", updateError);
-    }
-
-    // Mark invitation as accepted (skip for generic reusable codes)
-    if (!invite.code) {
-      const { error: inviteUpdateError } = await adminClient
-        .from("invitations")
-        .update({
-          status: "accepted",
-          accepted_at: new Date().toISOString()
-        })
-        .eq("id", inviteId);
-
-      if (inviteUpdateError) {
-        console.error("[SignUpAction] Error marking invitation as accepted:", inviteUpdateError);
-      }
+      console.error("[SignUpAction] Error updating profile details:", updateError);
     }
 
     // Audit Log for signup
     await adminClient.from("audit_logs").insert({
       user_id: data.user.id,
       action: "signup_success",
-      metadata: { phone_number: verifiedPhone, email: numidEmail, invite_id: inviteId }
+      metadata: { phone_number: verifiedPhone, email: numidEmail }
     });
 
     // Log the successful verification into public.verification_logs
@@ -289,7 +267,7 @@ export async function signUpAction(formData: FormData) {
 
     return { 
       success: true, 
-      message: "Signup successful! Your phone number and email routing have been verified. You can now access your dashboard." 
+      message: "Signup successful! You can now access your dashboard." 
     };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to complete signup" };

@@ -1296,7 +1296,7 @@ export default function DashboardPage() {
                     <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg">Invite a Friend</h3>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    NumID is invite-only. Invite your friends by entering their phone number and destination email.
+                    Invite your friends to claim their NumID by entering their phone number and destination email.
                   </p>
                 </div>
               </div>

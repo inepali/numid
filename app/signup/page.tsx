@@ -31,7 +31,7 @@ const supabase = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function SignupPage() {
   const router = useRouter();
-  const [step, setStep] = useState<SetupStep>("INVITE_INPUT");
+  const [step, setStep] = useState<SetupStep>("REGISTRATION");
   const [isPending, startTransition] = useTransition();
 
   // Form states
@@ -50,16 +50,14 @@ export default function SignupPage() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  // Check URL query parameters for invite code on mount
+  // Check URL query parameters for invite code on mount (referral check)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("invite");
     if (code) {
       setInviteId(code);
-      handleVerifyInvite(code);
-    } else {
-      setStep("INVITE_INPUT");
     }
+    setStep("REGISTRATION");
   }, []);
 
 
@@ -283,7 +281,7 @@ export default function SignupPage() {
             <div className="text-left">
               <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white mb-2">Claim your NumID</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Please enter the exact phone number and email address associated with your invitation, then set a password.
+                Please enter your phone number and destination email address, then set a password.
               </p>
             </div>
 
