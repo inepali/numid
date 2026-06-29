@@ -64,6 +64,125 @@ function saveMockDb(tableName: string, data: any[]) {
   }
 }
 
+// Mock Query Builder for Supabase chaining operations
+class MockQueryBuilder {
+  tableName: string;
+  filters: Array<{ field: string; val: any }> = [];
+  orderField: string | null = null;
+  orderOptions: any = null;
+  limitVal: number | null = null;
+  orStr: string | null = null;
+
+  constructor(tableName: string) {
+    this.tableName = tableName;
+  }
+
+  select(selectStr: string = "*") {
+    return this;
+  }
+
+  eq(field: string, val: any) {
+    this.filters.push({ field, val });
+    return this;
+  }
+
+  or(orStr: string) {
+    this.orStr = orStr;
+    return this;
+  }
+
+  order(orderField: string, options?: any) {
+    this.orderField = orderField;
+    this.orderOptions = options;
+    return this;
+  }
+
+  limit(limitVal: number) {
+    this.limitVal = limitVal;
+    return this;
+  }
+
+  async execute() {
+    let data = getMockDb(this.tableName);
+
+    // Apply orStr filter
+    if (this.orStr) {
+      const parts = this.orStr.split(",");
+      const matchedItems = [];
+      for (const item of data) {
+        let matchesOr = false;
+        for (const part of parts) {
+          const match = part.match(/([a-zA-Z0-9_]+)\.eq\.(.+)/);
+          if (match) {
+            const field = match[1];
+            const val = match[2];
+            if (String(item[field]) === String(val)) {
+              matchesOr = true;
+              break;
+            }
+          }
+        }
+        if (matchesOr) {
+          matchedItems.push(item);
+        }
+      }
+      data = matchedItems;
+    }
+
+    // Apply filters
+    for (const filter of this.filters) {
+      data = data.filter((x: any) => String(x[filter.field]) === String(filter.val));
+    }
+
+    // Apply ordering
+    if (this.orderField) {
+      data = [...data];
+      data.sort((a: any, b: any) => {
+        const valA = a[this.orderField!];
+        const valB = b[this.orderField!];
+        const timeA = new Date(valA).getTime() || 0;
+        const timeB = new Date(valB).getTime() || 0;
+        if (timeA && timeB) {
+          return this.orderOptions?.ascending ? timeA - timeB : timeB - timeA;
+        }
+        return this.orderOptions?.ascending
+          ? String(valA).localeCompare(String(valB))
+          : String(valB).localeCompare(String(valA));
+      });
+    }
+
+    // Apply limit
+    if (this.limitVal !== null) {
+      data = data.slice(0, this.limitVal);
+    }
+
+    return data;
+  }
+
+  then(onfulfilled?: (value: any) => any, onrejected?: (reason: any) => any) {
+    return this.execute().then(
+      (data) => onfulfilled?.({ data, error: null }),
+      (err) => onrejected?.(err) || { data: null, error: err }
+    );
+  }
+
+  async single() {
+    const data = await this.execute();
+    if (data.length === 0) {
+      return { data: null, error: { message: "Not found", code: "PGRST116" } };
+    }
+    return { data: data[0], error: null };
+  }
+
+  async maybeSingle() {
+    const data = await this.execute();
+    if (data.length === 0) {
+      return { data: null, error: null };
+    }
+    return { data: data[0], error: null };
+  }
+}
+
 // Mock Supabase Client class
 class MockSupabaseClient {
   auth = {
@@ -151,91 +270,7 @@ class MockSupabaseClient {
   from(tableName: string) {
     return {
       select: (selectStr: string = "*") => {
-        return {
-          eq: (field: string, val: any) => {
-            return {
-              single: async () => {
-                const data = getMockDb(tableName);
-                const item = data.find((x: any) => x[field] === val);
-                if (!item) return { data: null, error: { message: "Not found", code: "PGRST116" } };
-                return { data: item, error: null };
-              },
-              maybeSingle: async () => {
-                const data = getMockDb(tableName);
-                const item = data.find((x: any) => x[field] === val);
-                return { data: item || null, error: null };
-              },
-              order: (orderField: string, options: any) => {
-                return {
-                  eq: (subField: string, subVal: any) => {
-                    return {
-                      eq: (sub2Field: string, sub2Val: any) => {
-                        return {
-                          maybeSingle: async () => {
-                            const data = getMockDb(tableName);
-                            const items = data.filter((x: any) => x[field] === val && x[subField] === subVal && x[sub2Field] === sub2Val);
-                            return { data: items[0] || null, error: null };
-                          }
-                        };
-                      }
-                    };
-                  },
-                  then: async (resolve: any) => {
-                    const data = getMockDb(tableName);
-                    let items = data.filter((x: any) => x[field] === val);
-                    items.sort((a: any, b: any) => {
-                      const timeA = new Date(a[orderField]).getTime();
-                      const timeB = new Date(b[orderField]).getTime();
-                      return options?.ascending ? timeA - timeB : timeB - timeA;
-                    });
-                    resolve({ data: items, error: null });
-                  }
-                };
-              },
-              then: async (resolve: any) => {
-                const data = getMockDb(tableName);
-                const items = data.filter((x: any) => x[field] === val);
-                resolve({ data: items, error: null });
-              }
-            };
-          },
-          or: (orStr: string) => {
-            return {
-              maybeSingle: async () => {
-                const parts = orStr.split(",");
-                const data = getMockDb(tableName);
-                for (const part of parts) {
-                  const match = part.match(/([a-zA-Z0-9_]+)\.eq\.(.+)/);
-                  if (match) {
-                    const field = match[1];
-                    const val = match[2];
-                    const item = data.find((x: any) => x[field] === val);
-                    if (item) return { data: item, error: null };
-                  }
-                }
-                return { data: null, error: null };
-              }
-            };
-          },
-          order: (orderField: string, options: any) => {
-            return {
-              then: async (resolve: any) => {
-                const data = getMockDb(tableName);
-                let items = [...data];
-                items.sort((a: any, b: any) => {
-                  const timeA = new Date(a[orderField]).getTime();
-                  const timeB = new Date(b[orderField]).getTime();
-                  return options?.ascending ? timeA - timeB : timeB - timeA;
-                });
-                resolve({ data: items, error: null });
-              }
-            };
-          },
-          then: async (resolve: any) => {
-            const data = getMockDb(tableName);
-            resolve({ data, error: null });
-          }
-        };
+        return new MockQueryBuilder(tableName);
       },
       insert: async (payload: any) => {
         const data = getMockDb(tableName);
@@ -256,13 +291,13 @@ class MockSupabaseClient {
               then: async (resolve: any) => {
                 const data = getMockDb(tableName);
                 const updatedData = data.map((item: any) => {
-                  if (item[field] === val) {
+                  if (String(item[field]) === String(val)) {
                     return { ...item, ...payload, updated_at: new Date().toISOString() };
                   }
                   return item;
                 });
                 saveMockDb(tableName, updatedData);
-                resolve({ data: updatedData.find((x: any) => x[field] === val) || null, error: null });
+                resolve({ data: updatedData.find((x: any) => String(x[field]) === String(val)) || null, error: null });
               }
             };
           }
@@ -274,7 +309,7 @@ class MockSupabaseClient {
             return {
               then: async (resolve: any) => {
                 const data = getMockDb(tableName);
-                const filtered = data.filter((item: any) => item[field] !== val);
+                const filtered = data.filter((item: any) => String(item[field]) !== String(val));
                 saveMockDb(tableName, filtered);
                 resolve({ error: null });
               }
