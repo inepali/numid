@@ -52,9 +52,22 @@ import {
   Copy,
   Check,
   Camera,
+  Eye,
+  EyeOff,
+  Key,
+  Unlock,
+  FileText,
+  CreditCard,
 } from "lucide-react";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/ThemeToggle";
+import { 
+  fetchVaultItemsAction, 
+  saveVaultItemAction, 
+  deleteVaultItemAction, 
+  VaultItem 
+} from "@/app/actions/vault";
+import { encryptText, decryptText } from "@/lib/crypto";
 
 // Available services schema
 type ProfileCategoryKey = "socials" | "messaging" | "professional" | "business";
@@ -64,6 +77,16 @@ interface ServiceConfig {
   prefix: string;
   placeholder: string;
 }
+
+const VAULT_CATEGORIES = [
+  { key: "ssn", title: "Social Security Number (SSN)" },
+  { key: "driver_license", title: "Driver's License" },
+  { key: "bank_account", title: "Bank Account" },
+  { key: "password", title: "Login Password" },
+  { key: "passkey", title: "Passkey / Secret Key" },
+  { key: "other", title: "Other / Secure Note" },
+  { key: "system", title: "System" }
+];
 
 const PROFILE_CATEGORIES: Record<ProfileCategoryKey, { title: string; services: Record<string, ServiceConfig> }> = {
   socials: {
@@ -191,6 +214,255 @@ export default function DashboardPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteSending, setInviteSending] = useState(false);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+
+  // Vault states
+  const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
+  const [decryptedVaultItems, setDecryptedVaultItems] = useState<any[]>([]);
+  const [isVaultUnlocked, setIsVaultUnlocked] = useState(false);
+  const [vaultPin, setVaultPin] = useState("");
+  const [isVaultSetup, setIsVaultSetup] = useState<boolean | null>(null); // null = check pending, false = need setup, true = setup done
+  const [vaultInputPin, setVaultInputPin] = useState("");
+  const [vaultConfirmPin, setVaultConfirmPin] = useState("");
+  const [generatedRecoveryKey, setGeneratedRecoveryKey] = useState("");
+  const [hasSavedRecoveryKey, setHasSavedRecoveryKey] = useState(false);
+  
+  const [vaultError, setVaultError] = useState<string | null>(null);
+  const [vaultSuccess, setVaultSuccess] = useState<string | null>(null);
+  const [isVaultLoading, setIsVaultLoading] = useState(false);
+  const [showVaultAddModal, setShowVaultAddModal] = useState(false);
+  const [editingVaultItem, setEditingVaultItem] = useState<any | null>(null);
+  const [revealedVaultItemIds, setRevealedVaultItemIds] = useState<string[]>([]);
+  
+  // Vault Form states
+  const [vaultCategory, setVaultCategory] = useState("ssn");
+  const [vaultTitle, setVaultTitle] = useState("");
+  const [vaultFields, setVaultFields] = useState<Record<string, string>>({});
+
+  const loadVaultItems = async () => {
+    setVaultError(null);
+    const vaultRes = await fetchVaultItemsAction();
+    if (vaultRes.success && vaultRes.items) {
+      setVaultItems(vaultRes.items);
+      const verificationRow = vaultRes.items.find(item => item.category === "system" && item.title === "__verification__");
+      setIsVaultSetup(!!verificationRow);
+      
+      if (isVaultUnlocked && vaultPin) {
+        // Attempt to decrypt all items
+        const decryptedList = [];
+        for (const item of vaultRes.items) {
+          if (item.category === "system") continue;
+          try {
+            const decryptedText = await decryptText({
+              ciphertext: item.encrypted_data,
+              iv: item.iv,
+              salt: item.salt
+            }, vaultPin);
+            decryptedList.push({
+              ...item,
+              decryptedData: JSON.parse(decryptedText)
+            });
+          } catch (err) {
+            console.error("Failed to decrypt item:", item.title, err);
+          }
+        }
+        setDecryptedVaultItems(decryptedList);
+      }
+    }
+  };
+
+  const handleSetupVault = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVaultError(null);
+    setVaultSuccess(null);
+    
+    if (vaultInputPin.length < 6) {
+      setVaultError("Vault Master Password/PIN must be at least 6 characters.");
+      return;
+    }
+    
+    if (vaultInputPin !== vaultConfirmPin) {
+      setVaultError("Passwords do not match.");
+      return;
+    }
+
+    setIsVaultLoading(true);
+    try {
+      // Generate recovery key
+      const randomBytes = new Uint8Array(12);
+      if (typeof window !== "undefined" && window.crypto && window.crypto.getRandomValues) {
+        window.crypto.getRandomValues(randomBytes);
+      } else {
+        const cryptoModule = require("crypto");
+        cryptoModule.randomFillSync(randomBytes);
+      }
+      let keyHex = "";
+      for (let i = 0; i < randomBytes.length; i++) {
+        keyHex += randomBytes[i].toString(16).padStart(2, "0");
+      }
+      const recoveryKey = "numid-vault-" + keyHex;
+      
+      // Save verification payload
+      const payload = await encryptText(JSON.stringify({ verified: true, recoveryKey }), vaultInputPin);
+      const saveRes = await saveVaultItemAction({
+        category: "system",
+        title: "__verification__",
+        encrypted_data: payload.ciphertext,
+        iv: payload.iv,
+        salt: payload.salt
+      });
+      
+      if (saveRes.success) {
+        setGeneratedRecoveryKey(recoveryKey);
+        setVaultPin(vaultInputPin);
+      } else {
+        setVaultError(saveRes.message);
+      }
+    } catch (err: any) {
+      setVaultError(err.message || "Failed to set up private vault.");
+    } finally {
+      setIsVaultLoading(false);
+    }
+  };
+
+  const handleConfirmRecoveryKey = () => {
+    setHasSavedRecoveryKey(true);
+    setIsVaultUnlocked(true);
+    setIsVaultSetup(true);
+    setVaultSuccess("Private Vault successfully initialized!");
+    setVaultInputPin("");
+    setVaultConfirmPin("");
+    loadVaultItems();
+  };
+
+  const handleUnlockVault = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVaultError(null);
+    setVaultSuccess(null);
+    setIsVaultLoading(true);
+    
+    try {
+      const verificationRow = vaultItems.find(item => item.category === "system" && item.title === "__verification__");
+      if (!verificationRow) {
+        setVaultError("Vault not set up.");
+        return;
+      }
+      
+      const decryptedText = await decryptText({
+        ciphertext: verificationRow.encrypted_data,
+        iv: verificationRow.iv,
+        salt: verificationRow.salt
+      }, vaultInputPin);
+      
+      const parsed = JSON.parse(decryptedText);
+      if (parsed && parsed.verified) {
+        setVaultPin(vaultInputPin);
+        setIsVaultUnlocked(true);
+        setVaultSuccess("Vault unlocked!");
+        setVaultInputPin("");
+        
+        // Decrypt items
+        const decryptedList = [];
+        for (const item of vaultItems) {
+          if (item.category === "system") continue;
+          try {
+            const decText = await decryptText({
+              ciphertext: item.encrypted_data,
+              iv: item.iv,
+              salt: item.salt
+            }, vaultInputPin);
+            decryptedList.push({
+              ...item,
+              decryptedData: JSON.parse(decText)
+            });
+          } catch (err) {
+            console.error("Failed to decrypt item:", item.title, err);
+          }
+        }
+        setDecryptedVaultItems(decryptedList);
+      } else {
+        setVaultError("Invalid Vault PIN.");
+      }
+    } catch (err: any) {
+      setVaultError("Incorrect Vault PIN. Decryption verification failed.");
+    } finally {
+      setIsVaultLoading(false);
+    }
+  };
+
+  const handleLockVault = () => {
+    setVaultPin("");
+    setIsVaultUnlocked(false);
+    setDecryptedVaultItems([]);
+    setVaultSuccess("Vault locked.");
+  };
+
+  const handleSaveVaultItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVaultError(null);
+    setVaultSuccess(null);
+    
+    if (!vaultTitle.trim()) {
+      setVaultError("Please enter a title.");
+      return;
+    }
+
+    setIsVaultLoading(true);
+    try {
+      const plaintext = JSON.stringify(vaultFields);
+      const payload = await encryptText(plaintext, vaultPin);
+      
+      const saveRes = await saveVaultItemAction({
+        id: editingVaultItem?.id,
+        category: vaultCategory,
+        title: vaultTitle.trim(),
+        encrypted_data: payload.ciphertext,
+        iv: payload.iv,
+        salt: payload.salt
+      });
+      
+      if (saveRes.success) {
+        setVaultSuccess(saveRes.message);
+        setShowVaultAddModal(false);
+        setEditingVaultItem(null);
+        setVaultTitle("");
+        setVaultFields({});
+        await loadVaultItems();
+      } else {
+        setVaultError(saveRes.message);
+      }
+    } catch (err: any) {
+      setVaultError(err.message || "Failed to save vault item.");
+    } finally {
+      setIsVaultLoading(false);
+    }
+  };
+
+  const handleDeleteVaultItem = async (id: string) => {
+    if (!confirm("Are you sure you want to permanently delete this secret?")) return;
+    setVaultError(null);
+    setVaultSuccess(null);
+    setIsVaultLoading(true);
+    
+    try {
+      const delRes = await deleteVaultItemAction(id);
+      if (delRes.success) {
+        setVaultSuccess(delRes.message);
+        await loadVaultItems();
+      } else {
+        setVaultError(delRes.message);
+      }
+    } catch (err: any) {
+      setVaultError(err.message || "Failed to delete vault item.");
+    } finally {
+      setIsVaultLoading(false);
+    }
+  };
+
+  const toggleRevealVaultItem = (id: string) => {
+    setRevealedVaultItemIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
 
   const handleTestCloudflare = async () => {
     setCfLoading(true);
@@ -345,6 +617,16 @@ export default function DashboardPage() {
       const invitesRes = await getInvitationsAction();
       if (invitesRes.success && invitesRes.invitations) {
         setInvitations(invitesRes.invitations);
+      }
+
+      // Fetch vault items to check setup status
+      const vaultRes = await fetchVaultItemsAction();
+      if (vaultRes.success && vaultRes.items) {
+        setVaultItems(vaultRes.items);
+        const verificationRow = vaultRes.items.find(item => item.category === "system" && item.title === "__verification__");
+        setIsVaultSetup(!!verificationRow);
+      } else {
+        setIsVaultSetup(false);
       }
     } else {
       setErrorMsg(res.message || "Failed to load dashboard statistics");
@@ -1285,6 +1567,257 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* Private Identity Profile (E2EE Vault) Card */}
+            <div className="md:col-span-2 p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-6">
+              
+              {/* Vault Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/5">
+                <div>
+                  <div className="flex items-center space-x-2 text-indigo-650 dark:text-indigo-400">
+                    <Lock className="w-5 h-5" />
+                    <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg">Private Identity Profile</h3>
+                  </div>
+                  <p className="text-xs text-slate-505 dark:text-slate-400 mt-1">
+                    Store sensitive records (SSN, licenses, bank details, credentials) with zero-knowledge, client-side encryption.
+                  </p>
+                </div>
+                
+                {isVaultUnlocked && (
+                  <button
+                    onClick={handleLockVault}
+                    className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-white/5 transition-all flex items-center gap-1.5 shrink-0"
+                  >
+                    <Unlock className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Lock Vault</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Vault Error/Success Messages */}
+              {vaultError && (
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300 text-xs flex items-start gap-2 animate-fadeIn">
+                  <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                  <span>{vaultError}</span>
+                </div>
+              )}
+              {vaultSuccess && (
+                <div className="p-4 rounded-xl bg-indigo-505/10 bg-indigo-500/10 border border-indigo-500/20 text-indigo-750 dark:text-indigo-300 text-xs flex items-start gap-2 animate-fadeIn">
+                  <CheckCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                  <span>{vaultSuccess}</span>
+                </div>
+              )}
+
+              {/* 1. Setup Phase */}
+              {isVaultSetup === false && !generatedRecoveryKey && (
+                <form onSubmit={handleSetupVault} className="space-y-4 max-w-md">
+                  <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-500/20 rounded-xl text-xs text-slate-700 dark:text-slate-350">
+                    <p className="font-bold text-indigo-650 dark:text-indigo-400 mb-1">🔐 Initialize Your E2EE Vault</p>
+                    <p className="leading-relaxed">Set a Master PIN or password to secure your secrets. All encryption is performed directly in your browser. We never store or transmit your password.</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Set Vault PIN / Password</label>
+                      <input
+                        type="password"
+                        placeholder="••••••"
+                        value={vaultInputPin}
+                        onChange={(e) => setVaultInputPin(e.target.value)}
+                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl py-2.5 px-3.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Confirm PIN / Password</label>
+                      <input
+                        type="password"
+                        placeholder="••••••"
+                        value={vaultConfirmPin}
+                        onChange={(e) => setVaultConfirmPin(e.target.value)}
+                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl py-2.5 px-3.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/20"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isVaultLoading}
+                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-505 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md shadow-indigo-600/10"
+                  >
+                    {isVaultLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    <span>Initialize Private Vault</span>
+                  </button>
+                </form>
+              )}
+
+              {/* 1b. Recovery Key Display Phase */}
+              {isVaultSetup === false && generatedRecoveryKey && (
+                <div className="space-y-4 max-w-lg">
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/20 rounded-xl text-xs text-slate-700 dark:text-slate-350">
+                    <p className="font-bold text-amber-700 dark:text-amber-400 mb-1">⚠️ Crucial Security Action Required!</p>
+                    <p className="leading-relaxed">This is your vault recovery key. Since your credentials are end-to-end encrypted, this is the **ONLY** way to reset your vault if you forget your PIN. Store it in a physical notebook or password manager.</p>
+                  </div>
+
+                  <div className="p-4 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl font-mono text-sm text-center text-slate-900 dark:text-white font-bold tracking-wider select-all">
+                    {generatedRecoveryKey}
+                  </div>
+
+                  <button
+                    onClick={handleConfirmRecoveryKey}
+                    className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-505 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md"
+                  >
+                    <span>I Have Safely Saved My Recovery Key</span>
+                  </button>
+                </div>
+              )}
+
+              {/* 2. Locked Vault Phase */}
+              {isVaultSetup === true && isVaultUnlocked === false && (
+                <form onSubmit={handleUnlockVault} className="space-y-4 max-w-md">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-2 uppercase tracking-wide">Enter Vault Master PIN / Password</label>
+                    <div className="relative flex items-center">
+                      <input
+                        type="password"
+                        placeholder="••••••"
+                        value={vaultInputPin}
+                        onChange={(e) => setVaultInputPin(e.target.value)}
+                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isVaultLoading}
+                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-505 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md"
+                  >
+                    {isVaultLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lock className="w-3.5 h-3.5" />}
+                    <span>Unlock Private Profile</span>
+                  </button>
+                </form>
+              )}
+
+              {/* 3. Unlocked Vault Directory Phase */}
+              {isVaultSetup === true && isVaultUnlocked === true && (
+                <div className="space-y-6">
+                  {/* Controls */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {VAULT_CATEGORIES.filter(c => c.key !== "system").map((cat) => (
+                        <button
+                          key={cat.key}
+                          type="button"
+                          onClick={() => setVaultCategory(cat.key)}
+                          className={`px-3 py-1.5 rounded-xl border transition-all ${
+                            vaultCategory === cat.key
+                              ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30 font-bold"
+                              : "bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-400 border-slate-200 dark:border-white/5"
+                          }`}
+                        >
+                          {cat.title.split(" (")[0]}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingVaultItem(null);
+                        setVaultTitle("");
+                        setVaultFields({});
+                        setShowVaultAddModal(true);
+                      }}
+                      className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-505 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md shadow-indigo-600/10 shrink-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Entry</span>
+                    </button>
+                  </div>
+
+                  {/* Secret Directory List */}
+                  {decryptedVaultItems.filter(item => vaultCategory === "ssn" || item.category === vaultCategory).length === 0 ? (
+                    <div className="text-center py-10 text-xs text-slate-500 italic bg-slate-50/50 dark:bg-slate-900/10 rounded-2xl border border-dashed border-slate-200 dark:border-white/5">
+                      No encrypted secrets stored in this category yet.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {decryptedVaultItems
+                        .filter(item => vaultCategory === "ssn" || item.category === vaultCategory)
+                        .map((item) => {
+                          const isRevealed = revealedVaultItemIds.includes(item.id);
+                          
+                          return (
+                            <div key={item.id} className="p-4 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/10 hover:border-slate-300 dark:hover:border-white/10 transition-all flex flex-col justify-between space-y-4">
+                              <div>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                      {item.category === "bank_account" ? <CreditCard className="w-4 h-4" /> : item.category === "password" || item.category === "passkey" ? <Key className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                                    </div>
+                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate max-w-[150px]">{item.title}</h4>
+                                  </div>
+                                  
+                                  <div className="flex items-center space-x-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleRevealVaultItem(item.id)}
+                                      className="p-1.5 text-slate-400 dark:text-slate-505 hover:text-slate-700 dark:hover:text-white rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
+                                      title={isRevealed ? "Mask secret" : "Reveal secret"}
+                                    >
+                                      {isRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteVaultItem(item.id)}
+                                      className="p-1.5 text-slate-400 dark:text-slate-505 hover:text-red-655 dark:hover:text-red-400 rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
+                                      title="Delete secret"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="mt-3 space-y-2 text-xs border-t border-slate-200 dark:border-white/5 pt-3">
+                                  {Object.entries(item.decryptedData || {}).map(([key, val]) => (
+                                    <div key={key} className="flex items-center justify-between gap-4">
+                                      <span className="text-[10px] uppercase font-bold text-slate-450 dark:text-slate-500 truncate max-w-[80px]" title={key}>{key.replace(/_/g, " ")}</span>
+                                      <div className="flex items-center space-x-1.5 shrink-0 max-w-[180px]">
+                                        <span className="font-mono text-slate-800 dark:text-slate-350 truncate">
+                                          {isRevealed ? (val as string) : "••••••••"}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(val as string);
+                                            alert("Copied to clipboard!");
+                                          }}
+                                          className="p-1 text-slate-400 dark:text-slate-505 hover:text-slate-750 dark:hover:text-white rounded transition-colors shrink-0"
+                                          title="Copy value"
+                                        >
+                                          <Copy className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="text-[9px] text-slate-400 dark:text-slate-505 border-t border-slate-200 dark:border-white/5 pt-2 flex justify-between items-center">
+                                <span>Encrypted E2EE</span>
+                                <span>{item.updated_at ? new Date(item.updated_at).toLocaleDateString() : ""}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Invite a Friend Card */}
             <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/5">
@@ -1538,6 +2071,264 @@ export default function DashboardPage() {
         )}
 
       </main>
+
+      {/* DIALOG: Add Vault Entry */}
+      {showVaultAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white dark:bg-slate-955 dark:bg-slate-950 border border-slate-200 dark:border-white/5 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl animate-scaleIn">
+            <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg mb-2">Add Encrypted Secret</h3>
+            
+            <form onSubmit={handleSaveVaultItem} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Category</label>
+                <select
+                  value={vaultCategory}
+                  onChange={(e) => {
+                    setVaultCategory(e.target.value);
+                    setVaultFields({});
+                  }}
+                  className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
+                >
+                  {VAULT_CATEGORIES.filter(c => c.key !== "system").map((c) => (
+                    <option key={c.key} value={c.key}>{c.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Record Description / Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. My Personal SSN, Chase Savings Account"
+                  value={vaultTitle}
+                  onChange={(e) => setVaultTitle(e.target.value)}
+                  className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
+                  required
+                />
+              </div>
+
+              {/* Dynamic Category Specific Inputs */}
+              {vaultCategory === "ssn" && (
+                <>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Social Security Number</label>
+                    <input
+                      type="text"
+                      placeholder="000-00-0000"
+                      value={vaultFields.ssn_number || ""}
+                      onChange={(e) => setVaultFields(prev => ({ ...prev, ssn_number: e.target.value }))}
+                      className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none font-mono"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Full Name on Card</label>
+                    <input
+                      type="text"
+                      placeholder="John Doe"
+                      value={vaultFields.fullName || ""}
+                      onChange={(e) => setVaultFields(prev => ({ ...prev, fullName: e.target.value }))}
+                      className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
+                      required
+                    />
+                  </div>
+                </>
+              )}
+
+              {vaultCategory === "driver_license" && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">License Number</label>
+                      <input
+                        type="text"
+                        placeholder="T1234567"
+                        value={vaultFields.license_number || ""}
+                        onChange={(e) => setVaultFields(prev => ({ ...prev, license_number: e.target.value }))}
+                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none font-mono"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Issuing State</label>
+                      <input
+                        type="text"
+                        placeholder="NC"
+                        value={vaultFields.state || ""}
+                        onChange={(e) => setVaultFields(prev => ({ ...prev, state: e.target.value }))}
+                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Expiration Date</label>
+                    <input
+                      type="text"
+                      placeholder="MM/DD/YYYY"
+                      value={vaultFields.expiration || ""}
+                      onChange={(e) => setVaultFields(prev => ({ ...prev, expiration: e.target.value }))}
+                      className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none font-mono"
+                      required
+                    />
+                  </div>
+                </>
+              )}
+
+              {vaultCategory === "bank_account" && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Bank Name</label>
+                      <input
+                        type="text"
+                        placeholder="Chase"
+                        value={vaultFields.bank_name || ""}
+                        onChange={(e) => setVaultFields(prev => ({ ...prev, bank_name: e.target.value }))}
+                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Account Type</label>
+                      <select
+                        value={vaultFields.account_type || "checking"}
+                        onChange={(e) => setVaultFields(prev => ({ ...prev, account_type: e.target.value }))}
+                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
+                      >
+                        <option value="checking">Checking</option>
+                        <option value="savings">Savings</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Routing Number</label>
+                      <input
+                        type="text"
+                        placeholder="021000021"
+                        value={vaultFields.routing_number || ""}
+                        onChange={(e) => setVaultFields(prev => ({ ...prev, routing_number: e.target.value }))}
+                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none font-mono"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Account Number</label>
+                      <input
+                        type="text"
+                        placeholder="123456789"
+                        value={vaultFields.account_number || ""}
+                        onChange={(e) => setVaultFields(prev => ({ ...prev, account_number: e.target.value }))}
+                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none font-mono"
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {vaultCategory === "password" && (
+                <>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Website / Service URL</label>
+                    <input
+                      type="text"
+                      placeholder="https://github.com"
+                      value={vaultFields.website || ""}
+                      onChange={(e) => setVaultFields(prev => ({ ...prev, website: e.target.value }))}
+                      className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Username / Email</label>
+                      <input
+                        type="text"
+                        placeholder="user@example.com"
+                        value={vaultFields.username || ""}
+                        onChange={(e) => setVaultFields(prev => ({ ...prev, username: e.target.value }))}
+                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Password</label>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        value={vaultFields.password || ""}
+                        onChange={(e) => setVaultFields(prev => ({ ...prev, password: e.target.value }))}
+                        className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {vaultCategory === "passkey" && (
+                <>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Service Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. AWS Console, Google Account"
+                      value={vaultFields.website || ""}
+                      onChange={(e) => setVaultFields(prev => ({ ...prev, website: e.target.value }))}
+                      className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Passkey Secret Value</label>
+                    <textarea
+                      placeholder="Paste your base64 or raw passkey secret key here..."
+                      value={vaultFields.passkey_value || ""}
+                      onChange={(e) => setVaultFields(prev => ({ ...prev, passkey_value: e.target.value }))}
+                      className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none font-mono h-20 resize-none"
+                      required
+                    />
+                  </div>
+                </>
+              )}
+
+              {vaultCategory === "other" && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-550 dark:text-slate-400 block mb-2 uppercase tracking-wide">Secret Details / Note</label>
+                  <textarea
+                    placeholder="Enter private notes or secure credentials..."
+                    value={vaultFields.note || ""}
+                    onChange={(e) => setVaultFields(prev => ({ ...prev, note: e.target.value }))}
+                    className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none font-mono h-24 resize-none"
+                    required
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setShowVaultAddModal(false)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isVaultLoading}
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-505 text-white text-xs font-semibold rounded-xl flex items-center space-x-1.5"
+                >
+                  {isVaultLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                  <span>Save Secret</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* DIALOG 1: Update email */}
       {showEmailModal && (
