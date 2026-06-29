@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import "./globals.css";
+import MockSupabaseInterceptor from "@/app/components/MockSupabaseInterceptor";
 
 export const metadata: Metadata = {
   title: "NumID | Your Phone Number. Your Permanent Email Address.",
@@ -50,6 +51,7 @@ export default async function RootLayout({
         `}</style>
       </head>
       <body className="antialiased min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-200">
+        <MockSupabaseInterceptor />
         {children}
       </body>
     </html>
