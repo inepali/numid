@@ -183,6 +183,58 @@ class MockQueryBuilder {
   }
 }
 
+// Chained filter builder for mock update/delete operations
+class MockUpdateDeleteBuilder {
+  tableName: string;
+  payload: any | null; // null for delete
+  filters: Array<{ field: string; val: any }> = [];
+  isDelete: boolean;
+
+  constructor(tableName: string, payload: any, isDelete: boolean = false) {
+    this.tableName = tableName;
+    this.payload = payload;
+    this.isDelete = isDelete;
+  }
+
+  eq(field: string, val: any) {
+    this.filters.push({ field, val });
+    return this;
+  }
+
+  async execute() {
+    const data = getMockDb(this.tableName);
+    if (this.isDelete) {
+      const filtered = data.filter((item: any) => {
+        // Keep item if it does NOT match all filters (i.e. only delete if it matches ALL filters)
+        const matchesAll = this.filters.every(f => String(item[f.field]) === String(f.val));
+        return !matchesAll;
+      });
+      saveMockDb(this.tableName, filtered);
+      return { error: null };
+    } else {
+      let updatedRecord: any = null;
+      const updatedData = data.map((item: any) => {
+        const matchesAll = this.filters.every(f => String(item[f.field]) === String(f.val));
+        if (matchesAll) {
+          const updated = { ...item, ...this.payload, updated_at: new Date().toISOString() };
+          updatedRecord = updated;
+          return updated;
+        }
+        return item;
+      });
+      saveMockDb(this.tableName, updatedData);
+      return { data: updatedRecord, error: null };
+    }
+  }
+
+  then(onfulfilled?: (value: any) => any, onrejected?: (reason: any) => any) {
+    return this.execute().then(
+      (res) => onfulfilled?.(res),
+      (err) => onrejected?.(err) || { data: null, error: err }
+    );
+  }
+}
+
 // Mock Supabase Client class
 class MockSupabaseClient {
   auth = {
@@ -285,37 +337,10 @@ class MockSupabaseClient {
         return { data: Array.isArray(payload) ? newRecords : newRecords[0], error: null };
       },
       update: (payload: any) => {
-        return {
-          eq: (field: string, val: any) => {
-            return {
-              then: async (resolve: any) => {
-                const data = getMockDb(tableName);
-                const updatedData = data.map((item: any) => {
-                  if (String(item[field]) === String(val)) {
-                    return { ...item, ...payload, updated_at: new Date().toISOString() };
-                  }
-                  return item;
-                });
-                saveMockDb(tableName, updatedData);
-                resolve({ data: updatedData.find((x: any) => String(x[field]) === String(val)) || null, error: null });
-              }
-            };
-          }
-        };
+        return new MockUpdateDeleteBuilder(tableName, payload, false);
       },
       delete: () => {
-        return {
-          eq: (field: string, val: any) => {
-            return {
-              then: async (resolve: any) => {
-                const data = getMockDb(tableName);
-                const filtered = data.filter((item: any) => String(item[field]) !== String(val));
-                saveMockDb(tableName, filtered);
-                resolve({ error: null });
-              }
-            };
-          }
-        };
+        return new MockUpdateDeleteBuilder(tableName, null, true);
       }
     };
   }

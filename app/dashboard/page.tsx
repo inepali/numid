@@ -54,6 +54,7 @@ import {
   Camera,
   Eye,
   EyeOff,
+  Edit,
   Key,
   Unlock,
   FileText,
@@ -314,6 +315,45 @@ export default function DashboardPage() {
       if (saveRes.success) {
         setGeneratedRecoveryKey(recoveryKey);
         setVaultPin(vaultInputPin);
+
+        // Prepopulate vault items client-side
+        const prepopulated = [
+          {
+            category: "ssn",
+            title: "Primary SSN (Sample)",
+            fields: { ssn_number: "XXX-XX-6789", fullName: "Sanjaya Ghimire" }
+          },
+          {
+            category: "driver_license",
+            title: "Driver's License (Sample)",
+            fields: { license_number: "DL-987654321", state: "NC", expiration: "12/31/2030" }
+          },
+          {
+            category: "bank_account",
+            title: "Chase Checking (Sample)",
+            fields: { bank_name: "Chase Bank", account_type: "checking", routing_number: "021000021", account_number: "******1234" }
+          },
+          {
+            category: "password",
+            title: "GitHub Account (Sample)",
+            fields: { website: "https://github.com", username: "sghimire", password: "gH8#kL9$mN2!" }
+          }
+        ];
+
+        for (const item of prepopulated) {
+          try {
+            const encrypted = await encryptText(JSON.stringify(item.fields), vaultInputPin);
+            await saveVaultItemAction({
+              category: item.category,
+              title: item.title,
+              encrypted_data: encrypted.ciphertext,
+              iv: encrypted.iv,
+              salt: encrypted.salt
+            });
+          } catch (err) {
+            console.error("Failed to save prepopulated item:", item.title, err);
+          }
+        }
       } else {
         setVaultError(saveRes.message);
       }
@@ -435,6 +475,16 @@ export default function DashboardPage() {
     } finally {
       setIsVaultLoading(false);
     }
+  };
+
+  const handleEditVaultItem = (item: any) => {
+    setEditingVaultItem(item);
+    setVaultCategory(item.category);
+    setVaultTitle(item.title);
+    setVaultFields(item.decryptedData || {});
+    setVaultError(null);
+    setVaultSuccess(null);
+    setShowVaultAddModal(true);
   };
 
   const handleDeleteVaultItem = async (id: string) => {
@@ -1764,10 +1814,18 @@ export default function DashboardPage() {
                                     <button
                                       type="button"
                                       onClick={() => toggleRevealVaultItem(item.id)}
-                                      className="p-1.5 text-slate-400 dark:text-slate-505 hover:text-slate-700 dark:hover:text-white rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
+                                      className="p-1.5 text-slate-400 dark:text-slate-555 hover:text-slate-700 dark:hover:text-white rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
                                       title={isRevealed ? "Mask secret" : "Reveal secret"}
                                     >
                                       {isRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditVaultItem(item)}
+                                      className="p-1.5 text-slate-400 dark:text-slate-505 hover:text-slate-700 dark:hover:text-white rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
+                                      title="Edit secret"
+                                    >
+                                      <Edit className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                       type="button"
@@ -2076,7 +2134,7 @@ export default function DashboardPage() {
       {showVaultAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-md bg-white dark:bg-slate-955 dark:bg-slate-950 border border-slate-200 dark:border-white/5 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl animate-scaleIn">
-            <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg mb-2">Add Encrypted Secret</h3>
+            <h3 className="font-display font-bold text-slate-900 dark:text-white text-lg mb-2">{editingVaultItem ? "Edit Encrypted Secret" : "Add Encrypted Secret"}</h3>
             
             <form onSubmit={handleSaveVaultItem} className="space-y-4">
               <div>
@@ -2087,7 +2145,8 @@ export default function DashboardPage() {
                     setVaultCategory(e.target.value);
                     setVaultFields({});
                   }}
-                  className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none"
+                  disabled={!!editingVaultItem}
+                  className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-indigo-500/40 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {VAULT_CATEGORIES.filter(c => c.key !== "system").map((c) => (
                     <option key={c.key} value={c.key}>{c.title}</option>
@@ -2322,7 +2381,7 @@ export default function DashboardPage() {
                   className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-505 text-white text-xs font-semibold rounded-xl flex items-center space-x-1.5"
                 >
                   {isVaultLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                  <span>Save Secret</span>
+                  <span>{editingVaultItem ? "Save Changes" : "Save Secret"}</span>
                 </button>
               </div>
             </form>

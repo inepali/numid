@@ -594,6 +594,16 @@ export default function LandingPage() {
             </p>
           </div>
 
+          <div className="p-5 sm:p-8 rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 shadow-sm dark:shadow-none transition-all group col-span-1 md:col-span-1">
+            <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-600 dark:text-violet-400 mb-6 group-hover:scale-110 transition-transform">
+              <Lock className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Secure E2EE Vault</h3>
+            <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+              Store your sensitive private records (SSN, licenses, bank details, credentials) securely in an end-to-end encrypted, zero-knowledge browser vault.
+            </p>
+          </div>
+
         </div>
       </section>
 
