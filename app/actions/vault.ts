@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase";
+import { createClient, createAdminClient } from "@/lib/supabase";
 
 export interface VaultItem {
   id?: string;
@@ -125,5 +125,80 @@ export async function deleteVaultItemAction(id: string) {
     return { success: true, message: "Vault item deleted successfully." };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to delete vault item." };
+  }
+}
+
+/**
+ * Fetch all E2EE vault items by phone number for public decryption
+ */
+export async function fetchSharedVaultItemsAction(phone: string) {
+  try {
+    if (!phone) {
+      return { success: false, message: "Phone number is required." };
+    }
+
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
+    if (!cleanPhone) {
+      return { success: false, message: "Invalid phone number format." };
+    }
+
+    const phoneCandidates: string[] = [cleanPhone, `+${cleanPhone}`];
+    const addressCandidates: string[] = [`${cleanPhone}@numid.us`];
+
+    if (cleanPhone.length === 10) {
+      const withUS = `1${cleanPhone}`;
+      phoneCandidates.push(withUS, `+${withUS}`);
+      addressCandidates.push(`${withUS}@numid.us`);
+    } else if (cleanPhone.length === 11 && cleanPhone.startsWith("1")) {
+      const withoutUS = cleanPhone.substring(1);
+      phoneCandidates.push(withoutUS, `+${withoutUS}`);
+      addressCandidates.push(`${withoutUS}@numid.us`);
+    }
+
+    const orFilters = [
+      ...phoneCandidates.map(p => `phone_number.eq.${p}`),
+      ...addressCandidates.map(a => `numid_address.eq.${a}`),
+      ...addressCandidates.map(a => `numid_address.eq.${a.replace("@numid.us", "@numid.dev")}`)
+    ].join(",");
+
+    const adminClient = createAdminClient();
+    const { data: userRecord, error: userError } = await adminClient
+      .from("users")
+      .select("id, phone_number, numid_address, first_name, last_name, status, phone_verified, email_verified")
+      .eq("status", "active")
+      .or(orFilters)
+      .maybeSingle();
+
+    if (userError || !userRecord) {
+      return { success: false, message: "Profile not found or is inactive." };
+    }
+
+    if (!userRecord.phone_verified || !userRecord.email_verified) {
+      return { success: false, message: "Profile is not fully verified." };
+    }
+
+    // Retrieve encrypted vault items bypassing RLS
+    const { data: vaultItems, error: vaultError } = await adminClient
+      .from("vault_items")
+      .select("category, title, encrypted_data, iv, salt")
+      .eq("user_id", userRecord.id);
+
+    if (vaultError) {
+      console.error("[FetchSharedVaultItemsAction] Database error:", vaultError);
+      return { success: false, message: "Failed to retrieve encrypted vault items." };
+    }
+
+    return {
+      success: true,
+      profile: {
+        phone_number: userRecord.phone_number,
+        numid_address: userRecord.numid_address,
+        first_name: userRecord.first_name,
+        last_name: userRecord.last_name
+      },
+      items: vaultItems as VaultItem[]
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message || "An unexpected error occurred." };
   }
 }
