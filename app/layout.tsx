@@ -4,8 +4,8 @@ import "./globals.css";
 import MockSupabaseInterceptor from "@/app/components/MockSupabaseInterceptor";
 
 export const metadata: Metadata = {
-  title: "NumID | Your Phone Number. Your Permanent Email Address.",
-  description: "Never change your public email again. Use your phone number as a permanent public email address and forward messages securely to any destination.",
+  title: "NumID | One Number. Your Whole Identity.",
+  description: "Turn your phone number into a permanent, private email address (phone@numid.us), a shareable public directory profile, and a secure client-side E2EE vault for your sensitive credentials.",
   metadataBase: new URL("https://numid.dev"),
   icons: {
     icon: "/logo.png",
@@ -13,8 +13,8 @@ export const metadata: Metadata = {
     apple: "/logo.png",
   },
   openGraph: {
-    title: "NumID | Your Phone Number. Your Permanent Email Address.",
-    description: "Never change your public email again. Use your phone number as a permanent public email address and forward messages securely to any destination.",
+    title: "NumID | One Number. Your Whole Identity.",
+    description: "Turn your phone number into a permanent, private email address (phone@numid.us), a shareable public directory profile, and a secure client-side E2EE vault for your sensitive credentials.",
     url: "https://numid.dev",
     siteName: "NumID",
     locale: "en_US",
@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "NumID | Your Phone Number. Your Permanent Email Address.",
-    description: "Never change your public email again. Use your phone number as a permanent public email address and forward messages securely to any destination.",
+    title: "NumID | One Number. Your Whole Identity.",
+    description: "Turn your phone number into a permanent, private email address (phone@numid.us), a shareable public directory profile, and a secure client-side E2EE vault for your sensitive credentials.",
   }
 };
 

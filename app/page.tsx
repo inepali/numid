@@ -169,7 +169,7 @@ export default function LandingPage() {
                 "@id": "https://numid.dev/#webapp",
                 "name": "NumID",
                 "url": "https://numid.dev",
-                "description": "Never change your public email again. Use your phone number as a permanent public email address and forward messages securely to any destination.",
+                "description": "Turn your phone number into a permanent, private email address (phone@numid.us), a shareable public directory profile, and a secure client-side E2EE vault for your sensitive credentials.",
                 "applicationCategory": "BusinessApplication, Utility",
                 "operatingSystem": "All",
                 "browserRequirements": "Requires HTML5 compatible browser",
@@ -380,18 +380,18 @@ export default function LandingPage() {
       <section className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-10 sm:pb-16 text-center">
         <div className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 mb-8 text-xs font-semibold text-indigo-650 dark:text-indigo-300">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Launch Special: Permanent free email routing</span>
+          <span>Launch Special: Permanent free email routing & secure vault</span>
         </div>
         
         <h1 className="font-display text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-6 max-w-4xl mx-auto leading-tight">
-          Your Phone Number. <br />
+          One Number. <br />
           <span className="bg-gradient-to-r from-indigo-600 via-indigo-400 to-violet-650 dark:from-indigo-400 dark:via-violet-400 dark:to-purple-400 bg-clip-text text-transparent">
-            Your Permanent Email.
+            Your Whole Identity.
           </span>
         </h1>
         
         <p className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Never change your public email address again. Forward emails sent to <span className="text-slate-900 dark:text-white font-medium">5154146054@numid.us</span> to any destination. Fast, private, and memorable.
+          Turn your phone number into a permanent, private email address (<span className="text-slate-900 dark:text-white font-medium">5154146054@numid.us</span>), a shareable public directory profile, and a secure client-side E2EE vault for your sensitive credentials.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 sm:mb-20">
@@ -399,7 +399,7 @@ export default function LandingPage() {
             href="/signup" 
             className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold px-8 py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/10 flex items-center justify-center space-x-2 group hover:-translate-y-0.5"
           >
-            <span>Claim Your NumID Now</span>
+            <span>Claim Your NumID Profile & Vault</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
           <a 
