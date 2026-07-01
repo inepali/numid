@@ -134,23 +134,27 @@ export default function LandingPage() {
   const faqs = [
     {
       q: "How does NumID work?",
-      a: "NumID links your phone number to a custom routing email address at our domain (e.g., [your-phone]@numid.us). We use Cloudflare Email Routing to forward all incoming emails to your private destination email. You can change your private destination email at any time from your dashboard without changing your public NumID address."
+      a: "NumID links your phone number to a custom routing email address (e.g., [your-phone]@numid.us), a shareable public directory profile, and a secure client-side E2EE vault. We use Cloudflare Email Routing to forward messages to your private destination inbox, which you can update at any time without changing your public NumID address."
     },
     {
-      q: "Why use my phone number as an email?",
-      a: "It is incredibly easy to remember and communicate. When giving out your email address verbally, over the phone, or at checkout counters, stating your phone number is fast and less error-prone. It also hides your private inbox address from public lists."
+      q: "Why use my phone number as an email or profile link?",
+      a: "It is incredibly easy to remember and communicate. Stating your phone number verbally, over the phone, or at a checkout counter is fast and error-free. It protects your personal inbox from spam lists while keeping you easily reachable."
     },
     {
-      q: "Is my destination email address hidden?",
-      a: "Yes. Senders only see your public NumID address (e.g., 5154146054@numid.us). The forwarding happens securely in the background at the Cloudflare DNS level. Senders never learn your actual Gmail, Outlook, or Yahoo address."
+      q: "How secure is the E2EE Identity Vault?",
+      a: "The Private Identity Vault uses zero-knowledge, client-side encryption (AES-GCM). Your credentials—such as SSNs, licenses, passwords, and bank accounts—are encrypted directly in your browser using a Master PIN derived on your machine. We never see or store your Master PIN, ensuring your data remains private and untouchable."
     },
     {
-      q: "Can I reply to emails using my NumID?",
-      a: "Currently, NumID is optimized for forwarding (receiving emails). In our Premium Plan (coming soon), we will support reply masking, allowing you to send or reply to messages directly from your phone number alias."
+      q: "What is a NumID Public Profile?",
+      a: "A clean, numeric profile link (numid.dev/[phone]) that aggregates your social profiles, messaging platforms, and contact details. You can easily toggle visibility controls in your dashboard to choose which platforms are public and which are kept private."
+    },
+    {
+      q: "How does secure vault QR code sharing work?",
+      a: "From your dashboard, you can display a secure QR code and copyable link pointing to /v/[phone]. When unlocked via your Master PIN in the browser, authorized partners can securely view your designated E2EE vault items directly from the web client without exposing your plain-text data over insecure channels."
     },
     {
       q: "How do you verify my phone number?",
-      a: "We use the Twilio Verify API to send a secure One-Time Passcode (OTP) via SMS. Your phone number must be verified before your NumID is registered, preventing unauthorized signups."
+      a: "We use the Twilio Verify API to send a secure One-Time Passcode (OTP) via SMS. Your phone number must be verified before your NumID profile and vault are created, preventing unauthorized signups and ensuring total security."
     }
   ];
 
@@ -211,31 +215,39 @@ export default function LandingPage() {
                     "name": "How does NumID work?",
                     "acceptedAnswer": {
                       "@type": "Answer",
-                      "text": "NumID links your phone number to a custom routing email address at our domain (e.g., [your-phone]@numid.us). We use Cloudflare Email Routing to forward all incoming emails to your private destination email. You can change your private destination email at any time from your dashboard without changing your public NumID address."
+                      "text": "NumID links your phone number to a custom routing email address (e.g., [your-phone]@numid.us), a shareable public directory profile, and a secure client-side E2EE vault. We use Cloudflare Email Routing to forward messages to your private destination inbox, which you can update at any time without changing your public NumID address."
                     }
                   },
                   {
                     "@type": "Question",
-                    "name": "Why use my phone number as an email?",
+                    "name": "Why use my phone number as an email or profile link?",
                     "acceptedAnswer": {
                       "@type": "Answer",
-                      "text": "It is incredibly easy to remember and communicate. When giving out your email address verbally, over the phone, or at checkout counters, stating your phone number is fast and less error-prone. It also hides your private inbox address from public lists."
+                      "text": "It is incredibly easy to remember and communicate. Stating your phone number verbally, over the phone, or at a checkout counter is fast and error-free. It protects your personal inbox from spam lists while keeping you easily reachable."
                     }
                   },
                   {
                     "@type": "Question",
-                    "name": "Is my destination email address hidden?",
+                    "name": "How secure is the E2EE Identity Vault?",
                     "acceptedAnswer": {
                       "@type": "Answer",
-                      "text": "Yes. Senders only see your public NumID address (e.g., 5154146054@numid.us). The forwarding happens securely in the background at the Cloudflare DNS level. Senders never learn your actual Gmail, Outlook, or Yahoo address."
+                      "text": "The Private Identity Vault uses zero-knowledge, client-side encryption (AES-GCM). Your credentials—such as SSNs, licenses, passwords, and bank accounts—are encrypted directly in your browser using a Master PIN derived on your machine. We never see or store your Master PIN, ensuring your data remains private and untouchable."
                     }
                   },
                   {
                     "@type": "Question",
-                    "name": "Can I reply to emails using my NumID?",
+                    "name": "What is a NumID Public Profile?",
                     "acceptedAnswer": {
                       "@type": "Answer",
-                      "text": "Currently, NumID is optimized for forwarding (receiving emails). In our Premium Plan (coming soon), we will support reply masking, allowing you to send or reply to messages directly from your phone number alias."
+                      "text": "A clean, numeric profile link (numid.dev/[phone]) that aggregates your social profiles, messaging platforms, and contact details. You can easily toggle visibility controls in your dashboard to choose which platforms are public and which are kept private."
+                    }
+                  },
+                  {
+                    "@type": "Question",
+                    "name": "How does secure vault QR code sharing work?",
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": "From your dashboard, you can display a secure QR code and copyable link pointing to /v/[phone]. When unlocked via your Master PIN in the browser, authorized partners can securely view your designated E2EE vault items directly from the web client without exposing your plain-text data over insecure channels."
                     }
                   },
                   {
@@ -243,7 +255,7 @@ export default function LandingPage() {
                     "name": "How do you verify my phone number?",
                     "acceptedAnswer": {
                       "@type": "Answer",
-                      "text": "We use the Twilio Verify API to send a secure One-Time Passcode (OTP) via SMS. Your phone number must be verified before your NumID is registered, preventing unauthorized signups."
+                      "text": "We use the Twilio Verify API to send a secure One-Time Passcode (OTP) via SMS. Your phone number must be verified before your NumID profile and vault are created, preventing unauthorized signups and ensuring total security."
                     }
                   }
                 ]
